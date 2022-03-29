@@ -1,0 +1,8 @@
+.solid-virtualized-grid {
+  &__grid-container {
+    border: 1px solid black;
+    box-sizing: border-box;
+    overflow: scroll;
+    position: relative;
+  }
+}

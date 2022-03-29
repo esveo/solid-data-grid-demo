@@ -2,7 +2,23 @@
   &__grid-container {
     border: 1px solid black;
     box-sizing: border-box;
+    position: relative;
+  }
+
+  &__scroll-bar-dummy {
+    width: 100%;
+    height: 100%;
     overflow: scroll;
+  }
+
+  &__cell-area-container {
+    vertical-align: top;
+  }
+
+  &__grid-area {
+    vertical-align: top;
+    display: inline-block;
+    overflow: hidden;
     position: relative;
   }
 }

@@ -11,3 +11,15 @@ export function last<T>(
 ): T | undefined {
   return items[items.length - 1];
 }
+
+export function sumBy<T>(
+  items: ReadonlyArray<T>,
+  by: (item: T) => number
+): number {
+  let result = 0;
+  for (const item of items) {
+    result += by(item);
+  }
+
+  return result;
+}

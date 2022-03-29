@@ -1,5 +1,5 @@
 import { seed } from "@ngneat/falso";
-import { createEffect, createSignal } from "solid-js";
+import { createEffect } from "solid-js";
 import { createStore, reconcile } from "solid-js/store";
 import { AutoSizer } from "./lib/measure-dom/AutoSizer";
 import {
@@ -26,28 +26,130 @@ function App() {
   const columns = [
     {
       render: (person: Person) => person.id + "",
+      columnWidth: 80,
     },
     {
       render: (person: Person) => person.name,
+      columnWidth: 250,
     },
     {
       render: (person: Person) => person.favoriteTeam,
+      columnWidth: 250,
     },
     {
       render: (person: Person) => person.country,
+      columnWidth: 250,
     },
     {
       render: (person: Person) =>
         person.dateOfBirth.toLocaleDateString(),
+      columnWidth: 200,
+    },
+    {
+      render: (person: Person) => <button>✏️</button>,
+      columnWidth: 50,
+    },
+    {
+      render: (person: Person) => person.id + "",
+      columnWidth: 80,
+    },
+    {
+      render: (person: Person) => person.name,
+      columnWidth: 250,
+    },
+    {
+      render: (person: Person) => person.favoriteTeam,
+      columnWidth: 250,
+    },
+    {
+      render: (person: Person) => person.country,
+      columnWidth: 250,
+    },
+    {
+      render: (person: Person) =>
+        person.dateOfBirth.toLocaleDateString(),
+      columnWidth: 200,
+    },
+    {
+      render: (person: Person) => <button>✏️</button>,
+      columnWidth: 50,
+    },
+    {
+      render: (person: Person) => person.id + "",
+      columnWidth: 80,
+    },
+    {
+      render: (person: Person) => person.name,
+      columnWidth: 250,
+    },
+    {
+      render: (person: Person) => person.favoriteTeam,
+      columnWidth: 250,
+    },
+    {
+      render: (person: Person) => person.country,
+      columnWidth: 250,
+    },
+    {
+      render: (person: Person) =>
+        person.dateOfBirth.toLocaleDateString(),
+      columnWidth: 200,
+    },
+    {
+      render: (person: Person) => <button>✏️</button>,
+      columnWidth: 50,
+    },
+    {
+      render: (person: Person) => person.id + "",
+      columnWidth: 80,
+    },
+    {
+      render: (person: Person) => person.name,
+      columnWidth: 250,
+    },
+    {
+      render: (person: Person) => person.favoriteTeam,
+      columnWidth: 250,
+    },
+    {
+      render: (person: Person) => person.country,
+      columnWidth: 250,
+    },
+    {
+      render: (person: Person) =>
+        person.dateOfBirth.toLocaleDateString(),
+      columnWidth: 200,
+    },
+    {
+      render: (person: Person) => <button>✏️</button>,
+      columnWidth: 50,
+    },
+    {
+      render: (person: Person) => person.id + "",
+      columnWidth: 80,
+    },
+    {
+      render: (person: Person) => person.name,
+      columnWidth: 250,
+    },
+    {
+      render: (person: Person) => person.favoriteTeam,
+      columnWidth: 250,
+    },
+    {
+      render: (person: Person) => person.country,
+      columnWidth: 250,
+    },
+    {
+      render: (person: Person) =>
+        person.dateOfBirth.toLocaleDateString(),
+      columnWidth: 200,
+    },
+    {
+      render: (person: Person) => <button>✏️</button>,
+      columnWidth: 50,
     },
   ];
-
-  const [columnWidth, setColumnWidth] = createSignal(150);
-
-  function toggleColumnWidth() {
-    setColumnWidth((c) => (c === 200 ? 300 : 200));
-  }
-
   return (
     <div
       style={{
@@ -75,17 +177,22 @@ function App() {
             <VirtualizedGrid
               width={dimensions().width}
               height={dimensions().height}
+              frozenAreas={{
+                top: 5,
+                left: 2,
+                bottom: 5,
+                right: 2,
+              }}
               rows={store.persons ?? []}
               columns={columns}
-              getColumnWidth={() => columnWidth()}
+              getColumnWidth={(column) =>
+                column.columnWidth
+              }
               getRowHeight={(p) => 30}
               cell={(props) => {
                 console.log("Rebuild cell!");
                 return (
-                  <div
-                    style={props.style()}
-                    onClick={toggleColumnWidth}
-                  >
+                  <div style={props.style()}>
                     {props.column.render(props.row)}
                   </div>
                 );

@@ -149,8 +149,8 @@ export function VirtualizedGrid<TRow, TColumn>(
     props.frozenAreas?.left ?? 0;
   const lastUnfrozenColumnIndex = () =>
     props.columns.length -
-    (props.frozenAreas?.left ?? 0) -
-    (props.frozenAreas?.right ?? 0);
+    (props.frozenAreas?.right ?? 0) -
+    1;
 
   const widthOfLeftFrozenColumns = createMemo(() => {
     if (!props.frozenAreas?.left) return 0;
@@ -209,8 +209,8 @@ export function VirtualizedGrid<TRow, TColumn>(
     props.frozenAreas?.top ?? 0;
   const lastUnfrozenRowIndex = () =>
     props.rows.length -
-    (props.frozenAreas?.top ?? 0) -
-    (props.frozenAreas?.bottom ?? 0);
+    (props.frozenAreas?.bottom ?? 0) -
+    1;
 
   const heightOfTopFrozenRows = createMemo(() => {
     if (!props.rows.length) return 0;

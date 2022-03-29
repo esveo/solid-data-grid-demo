@@ -1,12 +1,12 @@
 import { seed } from "@ngneat/falso";
 import { createEffect } from "solid-js";
 import { createStore, reconcile } from "solid-js/store";
+import { createGrid } from "./lib/data-grid/gridBuilder";
 import { AutoSizer } from "./lib/measure-dom/AutoSizer";
 import {
   loadMockPersons,
   Person,
 } from "./lib/mock-data/MockPersons";
-import { VirtualizedGrid } from "./lib/virtualized-grid/VirtualizedGrid";
 
 seed("THIS IS MY SEED!");
 
@@ -23,133 +23,35 @@ function App() {
     });
   });
 
-  const columns = [
+  const personGrid = createGrid<Person>();
+
+  const columns = personGrid.buildColumns([
     {
-      render: (person: Person) => person.id + "",
-      columnWidth: 80,
+      title: "Id",
+      Item: (props) => <>{props.item.id}</>,
     },
     {
-      render: (person: Person) => person.name,
-      columnWidth: 250,
+      title: "Name",
+      Item: (props) => <>{props.item.name}</>,
     },
     {
-      render: (person: Person) => person.favoriteTeam,
-      columnWidth: 250,
+      title: "Country",
+      Item: (props) => <>{props.item.country}</>,
     },
     {
-      render: (person: Person) => person.country,
-      columnWidth: 250,
+      title: "Date of Birth",
+      Item: (props) => (
+        <>
+          {props.item.dateOfBirth.toLocaleDateString("de")}
+        </>
+      ),
     },
     {
-      render: (person: Person) =>
-        person.dateOfBirth.toLocaleDateString(),
-      columnWidth: 200,
+      title: "",
+      Item: (props) => <button>💾</button>,
     },
-    {
-      render: (person: Person) => <button>✏️</button>,
-      columnWidth: 50,
-    },
-    {
-      render: (person: Person) => person.id + "",
-      columnWidth: 80,
-    },
-    {
-      render: (person: Person) => person.name,
-      columnWidth: 250,
-    },
-    {
-      render: (person: Person) => person.favoriteTeam,
-      columnWidth: 250,
-    },
-    {
-      render: (person: Person) => person.country,
-      columnWidth: 250,
-    },
-    {
-      render: (person: Person) =>
-        person.dateOfBirth.toLocaleDateString(),
-      columnWidth: 200,
-    },
-    {
-      render: (person: Person) => <button>✏️</button>,
-      columnWidth: 50,
-    },
-    {
-      render: (person: Person) => person.id + "",
-      columnWidth: 80,
-    },
-    {
-      render: (person: Person) => person.name,
-      columnWidth: 250,
-    },
-    {
-      render: (person: Person) => person.favoriteTeam,
-      columnWidth: 250,
-    },
-    {
-      render: (person: Person) => person.country,
-      columnWidth: 250,
-    },
-    {
-      render: (person: Person) =>
-        person.dateOfBirth.toLocaleDateString(),
-      columnWidth: 200,
-    },
-    {
-      render: (person: Person) => <button>✏️</button>,
-      columnWidth: 50,
-    },
-    {
-      render: (person: Person) => person.id + "",
-      columnWidth: 80,
-    },
-    {
-      render: (person: Person) => person.name,
-      columnWidth: 250,
-    },
-    {
-      render: (person: Person) => person.favoriteTeam,
-      columnWidth: 250,
-    },
-    {
-      render: (person: Person) => person.country,
-      columnWidth: 250,
-    },
-    {
-      render: (person: Person) =>
-        person.dateOfBirth.toLocaleDateString(),
-      columnWidth: 200,
-    },
-    {
-      render: (person: Person) => <button>✏️</button>,
-      columnWidth: 50,
-    },
-    {
-      render: (person: Person) => person.id + "",
-      columnWidth: 80,
-    },
-    {
-      render: (person: Person) => person.name,
-      columnWidth: 250,
-    },
-    {
-      render: (person: Person) => person.favoriteTeam,
-      columnWidth: 250,
-    },
-    {
-      render: (person: Person) => person.country,
-      columnWidth: 250,
-    },
-    {
-      render: (person: Person) =>
-        person.dateOfBirth.toLocaleDateString(),
-      columnWidth: 200,
-    },
-    {
-      render: (person: Person) => <button>✏️</button>,
-      columnWidth: 50,
-    },
-  ];
+  ]);
+
   return (
     <div
       style={{
@@ -174,29 +76,11 @@ function App() {
       <div style={{ flex: "1 1 auto", overflow: "hidden" }}>
         <AutoSizer>
           {(dimensions) => (
-            <VirtualizedGrid
+            <personGrid.Grid
+              columns={columns}
+              items={store.persons ?? []}
               width={dimensions().width}
               height={dimensions().height}
-              frozenAreas={{
-                top: 5,
-                left: 2,
-                bottom: 5,
-                right: 2,
-              }}
-              rows={store.persons ?? []}
-              columns={columns}
-              getColumnWidth={(column) =>
-                column.columnWidth
-              }
-              getRowHeight={(p) => 30}
-              cell={(props) => {
-                console.log("Rebuild cell!");
-                return (
-                  <div style={props.style()}>
-                    {props.column.render(props.row)}
-                  </div>
-                );
-              }}
             />
           )}
         </AutoSizer>

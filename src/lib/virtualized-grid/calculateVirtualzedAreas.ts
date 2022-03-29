@@ -41,11 +41,11 @@ export function calculateVirtualizedAreas<TItem>(config: {
 
     const from =
       config.itemDimensions()[lastUnfrozenIndex() + 1]
-        .start;
+        ?.start ?? 0;
     const to =
       config.itemDimensions()[
         config.indexedItems().length - 1
-      ].end;
+      ]?.end ?? 0;
     return to - from;
   });
   const sizeOfUnfrozenArea = () =>
@@ -57,9 +57,11 @@ export function calculateVirtualizedAreas<TItem>(config: {
     if (!config.indexedItems().length) return 0;
 
     const from =
-      config.itemDimensions()[firstUnfrozenIndex()].start;
+      config.itemDimensions()[firstUnfrozenIndex()]
+        ?.start ?? 0;
     const to =
-      config.itemDimensions()[lastUnfrozenIndex()].end;
+      config.itemDimensions()[lastUnfrozenIndex()]?.end ??
+      0;
     return to - from;
   });
 

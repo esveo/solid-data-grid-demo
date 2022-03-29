@@ -1,0 +1,11 @@
+.solid-data-grid {
+  &__header-cell-resize-handle {
+    position: absolute;
+    right: -10px;
+    height: 100%;
+    background: blue;
+    z-index: 1;
+    width: 20px;
+    cursor: col-resize;
+  }
+}

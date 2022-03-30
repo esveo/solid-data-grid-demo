@@ -3,9 +3,7 @@ import {
   createMemo,
   JSX,
   mapArray,
-  Signal,
 } from "solid-js";
-import { lazy } from "../helpers/lazy";
 import { DataGridContext } from "./GridContext";
 
 export type ColumnFunctionArgs<TItem> = {
@@ -26,7 +24,9 @@ export type ColumnTemplate<TItem> = {
       item: TItem;
     } & ColumnFunctionArgs<TItem>
   ) => JSX.Element;
-  columnWidth: () => number | Signal<number>;
+  columnWidth: number;
+  resizable: boolean;
+  frozen: "LEFT" | "RIGHT" | "UNFROZEN";
 };
 
 export type ColumnTemplateDefinition<TItem> = {
@@ -54,20 +54,11 @@ export type ColumnTemplateDefinition<TItem> = {
     } & ColumnFunctionArgs<TItem>
   ) => JSX.Element;
 
-  /**
-   * Defines the width of a column
-   *   Provide a number or a function returning a number for
-   *   columns with a fixed width
-   *
-   *   Provide a signal or a function returning a signal for
-   *   resizable columns
-   */
-  columnWidth?:
-    | number
-    | Signal<number>
-    | ((
-        config: ColumnFunctionArgs<TItem>
-      ) => number | Signal<number>);
+  columnWidth?: number;
+
+  resizable?: boolean;
+
+  frozen?: "LEFT" | "RIGHT";
 };
 
 export function addDefaultsToColumnTemplateDefinition<
@@ -80,23 +71,14 @@ export function addDefaultsToColumnTemplateDefinition<
     ...definition,
     title: definition.title ?? definition.key,
 
-    columnWidth: lazy(() => {
-      if (definition.columnWidth === undefined) return 200;
-      if (typeof definition.columnWidth === "number")
-        return definition.columnWidth;
-
-      if (Array.isArray(definition.columnWidth))
-        return definition.columnWidth;
-
-      return definition.columnWidth({
-        context,
-        template,
-      });
-    }),
+    columnWidth: definition.columnWidth ?? 200,
+    resizable: definition.resizable ?? true,
 
     Item:
       definition.Item ??
       ((props) => <>{template.getValueFromItem(props)}</>),
+
+    frozen: definition.frozen ?? "UNFROZEN",
   };
   return template;
 }

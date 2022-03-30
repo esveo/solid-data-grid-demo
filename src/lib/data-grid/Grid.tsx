@@ -21,15 +21,13 @@ export const [dataGridColumnWidth, setDataGridColumnWidth] =
 export function DataGrid<TItem>(
   props: DataGridProps<TItem>
 ) {
-  const [columnWidths, setColumnWidths] = createSignal();
-
   const headerRow: HeaderRow<TItem> = {
     type: "HEADER_ROW",
   };
 
   const itemRows = createMemo(
     mapArray(
-      props.context.items,
+      props.context.input.items,
       (item): ItemRow<TItem> => ({ item, type: "ITEM_ROW" })
     )
   );
@@ -42,15 +40,16 @@ export function DataGrid<TItem>(
     return rows;
   });
 
+  const columnsByArea =
+    props.context.derivations.columnsByArea;
+
   return (
     <VirtualizedGrid
       rows={rows()}
-      columns={props.context.columns()}
-      getColumnWidth={(c) => {
-        const width = c.columnWidth();
-        if (typeof width === "number") return width;
-        return width[0]();
-      }}
+      columns={props.context.derivations.columns()}
+      getColumnWidth={(c) =>
+        props.context.derivations.getColumnWidth(c.key)
+      }
       getRowHeight={(row) => {
         switch (row.type) {
           case "HEADER_ROW":
@@ -61,7 +60,11 @@ export function DataGrid<TItem>(
             assertNever(row);
         }
       }}
-      frozenAreas={{ top: 1 }}
+      frozenAreas={{
+        top: 1,
+        left: columnsByArea().LEFT.length,
+        right: columnsByArea().RIGHT.length,
+      }}
       height={props.height}
       width={props.width}
       cell={(props) => <DataGridCell {...props} />}

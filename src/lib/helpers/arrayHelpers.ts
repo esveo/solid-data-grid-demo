@@ -23,3 +23,18 @@ export function sumBy<T>(
 
   return result;
 }
+
+export function keyBy<T, TKey extends string | number>(
+  items: ReadonlyArray<T>,
+  getKey: (
+    item: T,
+    index: number,
+    array: ReadonlyArray<T>
+  ) => string | number
+): Record<TKey, T> {
+  const result = {} as any;
+  items.forEach((item, index, items) => {
+    result[getKey(item, index, items)] = item;
+  });
+  return result;
+}

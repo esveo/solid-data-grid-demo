@@ -9,3 +9,5 @@ export function assertNever(x: never): never {
   );
   throw new Error("Should never be called");
 }
+
+export type ObjectOf<TValue> = Record<string, TValue>;

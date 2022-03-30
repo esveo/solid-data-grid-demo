@@ -8,6 +8,13 @@ import {
   useContext,
 } from "solid-js";
 import {
+  createStore,
+  DeepMutable,
+  produce,
+} from "solid-js/store";
+import { keyBy } from "../helpers/arrayHelpers";
+import { ObjectOf } from "../helpers/tsUtils";
+import {
   addDefaultsToColumnTemplateDefinition,
   ColumnTemplate,
   ColumnTemplateDefinition,
@@ -15,33 +22,103 @@ import {
 
 export type DataGridContextInput<TItem> = {
   gridKey: string;
-  columns: Accessor<ColumnTemplateDefinition<TItem>[]>;
+  columnDefinitions: Accessor<
+    ColumnTemplateDefinition<TItem>[]
+  >;
   items: Accessor<TItem[]>;
 };
 
 export class DataGridContext<TItem> {
-  gridKey: string;
-  columns: Accessor<ColumnTemplate<TItem>[]>;
-  items: Accessor<TItem[]>;
+  private updateStore: (
+    updater: (
+      state: DeepMutable<DataGridContext<TItem>["state"]>
+    ) => void
+  ) => void;
+
+  input: DataGridContextInput<TItem>;
+  state: ReturnType<
+    DataGridContext<TItem>["buildStore"]
+  >[0];
+  derivations: ReturnType<
+    DataGridContext<TItem>["deriveData"]
+  >;
 
   constructor(input: DataGridContextInput<TItem>) {
-    this.gridKey = input.gridKey;
-    this.columns = createMemo(
-      mapArray(input.columns, (d) =>
+    this.input = input;
+    const [state, updateStore] = this.buildStore();
+
+    this.state = state;
+    this.updateStore = (updater) =>
+      updateStore(produce(updater));
+
+    this.derivations = this.deriveData();
+  }
+
+  private buildStore() {
+    return createStore({
+      areaByColumnKey: {} as ObjectOf<
+        "LEFT" | "RIGHT" | "UNFROZEN"
+      >,
+      columnWidthByColumnKey: {} as ObjectOf<number>,
+    });
+  }
+
+  private deriveData() {
+    /**
+     * Define a function that works as an object
+     * that can be extended after the definition
+     *
+     * This way we can simply return $ at the end of this function
+     * while still having complete type information
+     * about all fields that are added in here.
+     */
+    function $() {}
+
+    $.columns = createMemo(
+      mapArray(this.input.columnDefinitions, (d) =>
         addDefaultsToColumnTemplateDefinition(d, () => this)
       )
     );
 
-    this.items = input.items;
+    $.columnsByKey = createMemo(() =>
+      keyBy($.columns(), (c) => c.key)
+    );
+
+    $.columnsByArea = createMemo(() => {
+      const columnsByArea: Record<
+        "LEFT" | "RIGHT" | "UNFROZEN",
+        ColumnTemplate<TItem>[]
+      > = {
+        LEFT: [],
+        RIGHT: [],
+        UNFROZEN: [],
+      };
+      for (const column of $.columns()) {
+        const area =
+          this.state.areaByColumnKey[column.key] ??
+          column.frozen;
+        columnsByArea[area].push(column);
+      }
+      return columnsByArea;
+    });
+
+    $.getColumnWidth = (columnKey: string) =>
+      this.state.columnWidthByColumnKey[columnKey] ??
+      this.derivations.columnsByKey()[columnKey]
+        .columnWidth;
+
+    return $ as Omit<typeof $, keyof Function>;
   }
 
   resizeColumn(
     column: ColumnTemplate<TItem>,
     newWidth: number
   ) {
-    const width = column.columnWidth();
-    if (typeof width === "number") return;
-    width[1](Math.max(newWidth, 60));
+    const clampedNewWidth = Math.max(newWidth, 60);
+    this.updateStore((draft) => {
+      draft.columnWidthByColumnKey[column.key] =
+        clampedNewWidth;
+    });
   }
 }
 

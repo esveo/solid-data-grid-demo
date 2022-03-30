@@ -1,5 +1,5 @@
 import { seed } from "@ngneat/falso";
-import { createEffect, createSignal } from "solid-js";
+import { createEffect } from "solid-js";
 import { createStore, reconcile } from "solid-js/store";
 import { dynamicColumns } from "./lib/data-grid/ColumnTemplate";
 import { DataGrid } from "./lib/data-grid/Grid";
@@ -34,31 +34,27 @@ function App() {
     {
       key: "Id",
       getValueFromItem: (props) => props.item.id,
-      columnWidth: createSignal(200),
+      frozen: "LEFT",
     },
     {
       key: "Name",
       getValueFromItem: (props) => props.item.name,
-      columnWidth: createSignal(200),
     },
     {
       key: "Country",
       getValueFromItem: (props) => props.item.country,
-      columnWidth: createSignal(200),
     },
     dynamicColumns(
       () => range(0, store.dummyColumnCount),
       (i) => ({
         key: "Dummy column " + i,
         getValueFromItem: (props) => props.template.key,
-        columnWidth: createSignal(200),
       })
     ),
     {
       key: "Date of Birth",
       getValueFromItem: (props) =>
         props.item.dateOfBirth.toLocaleDateString("de"),
-      columnWidth: createSignal(200),
     },
     {
       key: "actions",
@@ -66,11 +62,13 @@ function App() {
       getValueFromItem: () => null,
       Item: (props) => <button>💾</button>,
       columnWidth: 60,
+      resizable: false,
+      frozen: "RIGHT",
     },
   ]);
 
   const context = personGrid.buildContext({
-    columns: columns,
+    columnDefinitions: columns,
     gridKey: "person-grid",
     items: () => store.persons ?? [],
   });

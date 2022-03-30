@@ -33,11 +33,10 @@ function HeaderCell<TItem>(
   >
 ) {
   const gridContext = useDataGridContext<TItem>();
-  const columnWidthDefinition = props.column.columnWidth();
   const columnWidth = () =>
-    typeof columnWidthDefinition === "number"
-      ? columnWidthDefinition
-      : columnWidthDefinition[0]();
+    gridContext.derivations.getColumnWidth(
+      props.column.key
+    );
 
   const [dragStart, setDragStart] = createSignal<{
     x: number;
@@ -93,7 +92,7 @@ function HeaderCell<TItem>(
       style={props.style()}
       onPointerDown={handleDragStart}
     >
-      <Show when={Array.isArray(columnWidthDefinition)}>
+      <Show when={props.column.resizable}>
         <div
           class={css("__header-cell-resize-handle")}
         ></div>

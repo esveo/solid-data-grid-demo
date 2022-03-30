@@ -89,15 +89,18 @@ function HeaderCell<TItem>(
 
   return (
     <div
+      class={css("__cell", "__header-cell")}
       style={props.style()}
-      onPointerDown={handleDragStart}
     >
       <Show when={props.column.resizable}>
         <div
+          onPointerDown={handleDragStart}
           class={css("__header-cell-resize-handle")}
         ></div>
       </Show>
-      {props.column.title}
+      <span class={css("__header-cell--title")}>
+        {props.column.title}
+      </span>
     </div>
   );
 }
@@ -110,7 +113,10 @@ function ItemCell<TItem>(
 ) {
   const context = useDataGridContext<TItem>();
   return (
-    <div style={props.style()}>
+    <div
+      style={props.style()}
+      class={css("__cell", "__body-cell", "__item-cell")}
+    >
       <Dynamic
         component={props.column.Item}
         item={props.row.item}

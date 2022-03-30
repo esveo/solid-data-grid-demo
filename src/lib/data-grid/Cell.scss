@@ -7,4 +7,56 @@
     width: 20px;
     cursor: col-resize;
   }
+
+  &__header-cell {
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    padding: 0 0.5rem;
+    box-sizing: border-box;
+
+    &:after {
+      content: "";
+      height: 0.8rem;
+      position: absolute;
+      right: 0;
+      border-right: 2px solid rgb(130, 130, 130);
+    }
+  }
+
+  &__header-cell--title {
+    width: 100%;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+
+  &__string-renderer {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    padding: 0 0.5rem;
+    box-sizing: border-box;
+  }
+
+  &__string-renderer--content {
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+
+  &__number-renderer {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding: 0 0.5rem;
+    box-sizing: border-box;
+  }
+
+  &__number-renderer--content {
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+  }
 }

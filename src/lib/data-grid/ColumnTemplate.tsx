@@ -4,6 +4,7 @@ import {
   JSX,
   mapArray,
 } from "solid-js";
+import { DefaultRenderer } from "./cell-renderers/DefaultRenderer";
 import { DataGridContext } from "./GridContext";
 
 export type ColumnFunctionArgs<TItem> = {
@@ -76,7 +77,11 @@ export function addDefaultsToColumnTemplateDefinition<
 
     Item:
       definition.Item ??
-      ((props) => <>{template.getValueFromItem(props)}</>),
+      ((props) => (
+        <DefaultRenderer
+          content={template.getValueFromItem(props)}
+        ></DefaultRenderer>
+      )),
 
     frozen: definition.frozen ?? "UNFROZEN",
   };

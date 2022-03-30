@@ -27,11 +27,11 @@ export function calculateVirtualizedAreas<TItem>(config: {
     if (!config.frozenCountAtStart()) return 0;
     if (!config.indexedItems().length) return 0;
 
-    const from = config.itemDimensions()[0].start;
+    const from = config.itemDimensions()[0]?.start ?? 0;
     const to =
       config.itemDimensions()[
         config.frozenCountAtStart()! - 1
-      ].end;
+      ]?.end ?? 0;
     return to - from;
   });
 
@@ -80,7 +80,11 @@ export function calculateVirtualizedAreas<TItem>(config: {
   const visibleIndexedItems = createMemo(() =>
     calculateVisibleItems({
       getItemDimensionRange: (row) =>
-        config.itemDimensions()[row.index()],
+        config.itemDimensions()[row.index()] ?? {
+          start: 0,
+          end: 0,
+          size: 0,
+        },
       items: unfrozenIndexedItems(),
       sizeOfVisibleArea: sizeOfUnfrozenArea(),
       startOfVisibleArea:

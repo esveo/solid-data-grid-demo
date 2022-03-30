@@ -15,6 +15,10 @@ import {
 import { keyBy } from "../helpers/arrayHelpers";
 import { ObjectOf } from "../helpers/tsUtils";
 import {
+  FrozenColumnArea,
+  SortDirection,
+} from "./baseTypes";
+import {
   addDefaultsToColumnTemplateDefinition,
   ColumnTemplate,
   ColumnTemplateDefinition,
@@ -56,10 +60,12 @@ export class DataGridContext<TItem> {
 
   private buildStore() {
     return createStore({
-      areaByColumnKey: {} as ObjectOf<
-        "LEFT" | "RIGHT" | "UNFROZEN"
-      >,
+      areaByColumnKey: {} as ObjectOf<FrozenColumnArea>,
       columnWidthByColumnKey: {} as ObjectOf<number>,
+      sortBy: null as null | {
+        columnKey: string;
+        direction: SortDirection;
+      },
     });
   }
 
@@ -86,7 +92,7 @@ export class DataGridContext<TItem> {
 
     $.columnsByArea = createMemo(() => {
       const columnsByArea: Record<
-        "LEFT" | "RIGHT" | "UNFROZEN",
+        FrozenColumnArea,
         ColumnTemplate<TItem>[]
       > = {
         LEFT: [],
@@ -105,7 +111,42 @@ export class DataGridContext<TItem> {
     $.getColumnWidth = (columnKey: string) =>
       this.state.columnWidthByColumnKey[columnKey] ??
       this.derivations.columnsByKey()[columnKey]
-        .columnWidth;
+        ?.columnWidth ??
+      200;
+
+    $.sortedItems = createMemo(() => {
+      const sortBy = this.state.sortBy;
+      if (!sortBy) return this.input.items();
+
+      const column = $.columnsByKey()[sortBy.columnKey];
+      if (!column) return this.input.items();
+
+      const getSortCriteria = column.sortBy;
+
+      const directionSign =
+        sortBy.direction === "ASC" ? -1 : 1;
+
+      const sortCriteria = this.input
+        .items()
+        .map((item) => ({
+          sortCriteria: getSortCriteria({
+            item,
+            context: () => this,
+            template: column,
+          }),
+          item,
+        }));
+
+      return sortCriteria
+        .sort((a, b) => {
+          if (a.sortCriteria < b.sortCriteria)
+            return directionSign;
+          if (a.sortCriteria > b.sortCriteria)
+            return directionSign * -1;
+          return 0;
+        })
+        .map((n) => n.item);
+    });
 
     return $ as Omit<typeof $, keyof Function>;
   }
@@ -119,6 +160,19 @@ export class DataGridContext<TItem> {
       draft.columnWidthByColumnKey[column.key] =
         clampedNewWidth;
     });
+  }
+
+  sortByColumn(
+    column: ColumnTemplate<TItem>,
+    direction: SortDirection
+  ) {
+    this.updateStore(
+      (draft) =>
+        (draft.sortBy = {
+          columnKey: column.key,
+          direction,
+        })
+    );
   }
 }
 

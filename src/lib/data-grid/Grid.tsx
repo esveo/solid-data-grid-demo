@@ -7,7 +7,7 @@ import { assertNever } from "../helpers/tsUtils";
 import { VirtualizedGrid } from "../virtualized-grid/VirtualizedGrid";
 import { DataGridCell } from "./Cell";
 import { DataGridContext } from "./GridContext";
-import { HeaderRow, ItemRow, Row } from "./Row";
+import { HeaderRow, ItemRow } from "./Row";
 
 export type DataGridProps<TItem> = {
   width: number;
@@ -27,15 +27,13 @@ export function DataGrid<TItem>(
 
   const itemRows = createMemo(
     mapArray(
-      props.context.input.items,
+      props.context.derivations.sortedItems,
       (item): ItemRow<TItem> => ({ item, type: "ITEM_ROW" })
     )
   );
 
   const rows = createMemo(() => {
-    const rows: Row<TItem>[] = itemRows();
-
-    rows.unshift(headerRow);
+    const rows = [headerRow, ...itemRows()];
 
     return rows;
   });

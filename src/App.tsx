@@ -24,6 +24,7 @@ function App() {
 
   createEffect(() => {
     loadMockPersons(personCount).then((persons) => {
+      Object.assign(window, { persons });
       updateStore(reconcile({ ...store, persons }));
     });
   });
@@ -33,33 +34,34 @@ function App() {
   const columns = personGrid.buildColumns([
     {
       key: "Id",
-      getValueFromItem: (props) => props.item.id,
+      valueFromItem: (props) => props.item.id,
       frozen: "LEFT",
     },
     {
       key: "Name",
-      getValueFromItem: (props) => props.item.name,
+      valueFromItem: (props) => props.item.name,
     },
     {
       key: "Country",
-      getValueFromItem: (props) => props.item.country,
+      valueFromItem: (props) => props.item.country,
     },
     dynamicColumns(
       () => range(0, store.dummyColumnCount),
       (i) => ({
         key: "Dummy column " + i,
-        getValueFromItem: (props) => props.template.key,
+        valueFromItem: (props) => props.template.key,
       })
     ),
     {
       key: "Date of Birth",
-      getValueFromItem: (props) =>
-        props.item.dateOfBirth.toLocaleDateString("de"),
+      valueFromItem: (props) =>
+        props.item.dateOfBirth.toLocaleDateString(),
+      sortBy: (props) => props.item.dateOfBirth,
     },
     {
       key: "actions",
       title: "",
-      getValueFromItem: () => null,
+      valueFromItem: () => null,
       Item: (props) => <button>💾</button>,
       columnWidth: 60,
       resizable: false,
@@ -72,6 +74,8 @@ function App() {
     gridKey: "person-grid",
     items: () => store.persons ?? [],
   });
+
+  Object.assign(window, { context });
 
   return (
     <DataGridContextProvider value={context}>

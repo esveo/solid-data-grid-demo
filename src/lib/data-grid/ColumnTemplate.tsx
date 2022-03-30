@@ -15,7 +15,7 @@ export type ColumnFunctionArgs<TItem> = {
 export type ColumnTemplate<TItem> = {
   key: string;
   title: string;
-  getValueFromItem: (
+  valueFromItem: (
     props: {
       item: TItem;
     } & ColumnFunctionArgs<TItem>
@@ -28,6 +28,12 @@ export type ColumnTemplate<TItem> = {
   columnWidth: number;
   resizable: boolean;
   frozen: "LEFT" | "RIGHT" | "UNFROZEN";
+  sortBy: (
+    props: {
+      item: TItem;
+    } & ColumnFunctionArgs<TItem>
+  ) => any;
+  sortable: boolean;
 };
 
 export type ColumnTemplateDefinition<TItem> = {
@@ -37,7 +43,7 @@ export type ColumnTemplateDefinition<TItem> = {
   /**
    * Return a displayable primitive value from the item.
    */
-  getValueFromItem: (
+  valueFromItem: (
     props: {
       item: TItem;
     } & ColumnFunctionArgs<TItem>
@@ -60,6 +66,21 @@ export type ColumnTemplateDefinition<TItem> = {
   resizable?: boolean;
 
   frozen?: "LEFT" | "RIGHT";
+
+  /**
+   * Retrieve the sorting criteria from an item
+   * Defaults to `getValueFromItem`
+   */
+  sortBy?: (
+    props: {
+      item: TItem;
+    } & ColumnFunctionArgs<TItem>
+  ) => any;
+
+  /**
+   * Defaults to `true`
+   */
+  sortable?: boolean;
 };
 
 export function addDefaultsToColumnTemplateDefinition<
@@ -79,11 +100,14 @@ export function addDefaultsToColumnTemplateDefinition<
       definition.Item ??
       ((props) => (
         <DefaultRenderer
-          content={template.getValueFromItem(props)}
+          content={template.valueFromItem(props)}
         ></DefaultRenderer>
       )),
 
     frozen: definition.frozen ?? "UNFROZEN",
+
+    sortBy: definition.sortBy ?? definition.valueFromItem,
+    sortable: definition.sortable ?? true,
   };
   return template;
 }

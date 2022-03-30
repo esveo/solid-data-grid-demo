@@ -19,7 +19,7 @@ export function calculateVisibleItems<TItem>(config: {
   let i = 0;
 
   for (; i < config.items.length; i++) {
-    const item = config.items[i];
+    const item = config.items[i]!;
     const range = config.getItemDimensionRange(item);
     const end = range.start + range.size;
     if (end > start) {
@@ -31,7 +31,7 @@ export function calculateVisibleItems<TItem>(config: {
   let lastVisibleIndex = config.items.length - 1;
 
   for (; i < config.items.length; i++) {
-    const item = config.items[i];
+    const item = config.items[i]!;
     const range = config.getItemDimensionRange(item);
     if (range.start > end) {
       lastVisibleIndex = i - 1;
@@ -45,7 +45,7 @@ export function calculateVisibleItems<TItem>(config: {
     i <= lastVisibleIndex;
     i++
   ) {
-    visibleItems.push(config.items[i]);
+    visibleItems.push(config.items[i]!);
   }
 
   return visibleItems;

@@ -39,7 +39,7 @@ export function GridArea<TRow, TColumn>(props: {
               const columnDimension = () =>
                 props.columnDimensions[
                   indexedColumn.index()
-                ];
+                ]!;
               const rowDimension = () =>
                 props.rowDimensions[indexedRow.index()];
 
@@ -55,11 +55,11 @@ export function GridArea<TRow, TColumn>(props: {
                     props.horizontal.positionOffset() +
                     "px",
                   top:
-                    rowDimension().start -
+                    rowDimension()!.start -
                     props.vertical.positionOffset() +
                     "px",
                   width: columnDimension().size + "px",
-                  height: rowDimension().size + "px",
+                  height: rowDimension()!.size + "px",
                 }),
               });
             }}

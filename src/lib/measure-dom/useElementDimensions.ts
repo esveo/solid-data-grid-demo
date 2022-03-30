@@ -20,7 +20,7 @@ export function useElementDimensions(
 
     const observer = new ResizeObserver((entries) => {
       const [first] = entries;
-      const { width, height } = first.contentRect;
+      const { width, height } = first!.contentRect;
       setDimensions({
         width: Math.floor(width),
         height: Math.floor(height),

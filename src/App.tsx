@@ -1,7 +1,11 @@
 import { seed } from "@ngneat/falso";
-import { createEffect } from "solid-js";
+import { createEffect, createSignal } from "solid-js";
 import { createStore, reconcile } from "solid-js/store";
-import { createGrid } from "./lib/data-grid/gridBuilder";
+import { dynamicColumns } from "./lib/data-grid/ColumnTemplate";
+import { DataGrid } from "./lib/data-grid/Grid";
+import { createGridBuilder } from "./lib/data-grid/gridBuilder";
+import { DataGridContextProvider } from "./lib/data-grid/GridContext";
+import { range } from "./lib/helpers/arrayHelpers";
 import { AutoSizer } from "./lib/measure-dom/AutoSizer";
 import {
   loadMockPersons,
@@ -15,77 +19,123 @@ function App() {
 
   const [store, updateStore] = createStore({
     persons: null as Person[] | null,
+    dummyColumnCount: 0,
   });
 
   createEffect(() => {
     loadMockPersons(personCount).then((persons) => {
-      updateStore(reconcile({ persons }));
+      updateStore(reconcile({ ...store, persons }));
     });
   });
 
-  const personGrid = createGrid<Person>();
+  const personGrid = createGridBuilder<Person>();
 
   const columns = personGrid.buildColumns([
     {
-      title: "Id",
-      Item: (props) => <>{props.item.id}</>,
+      key: "Id",
+      getValueFromItem: (props) => props.item.id,
+      columnWidth: createSignal(200),
     },
     {
-      title: "Name",
-      Item: (props) => <>{props.item.name}</>,
+      key: "Name",
+      getValueFromItem: (props) => props.item.name,
+      columnWidth: createSignal(200),
     },
     {
-      title: "Country",
-      Item: (props) => <>{props.item.country}</>,
+      key: "Country",
+      getValueFromItem: (props) => props.item.country,
+      columnWidth: createSignal(200),
+    },
+    dynamicColumns(
+      () => range(0, store.dummyColumnCount),
+      (i) => ({
+        key: "Dummy column " + i,
+        getValueFromItem: (props) => props.template.key,
+        columnWidth: createSignal(200),
+      })
+    ),
+    {
+      key: "Date of Birth",
+      getValueFromItem: (props) =>
+        props.item.dateOfBirth.toLocaleDateString("de"),
+      columnWidth: createSignal(200),
     },
     {
-      title: "Date of Birth",
-      Item: (props) => (
-        <>
-          {props.item.dateOfBirth.toLocaleDateString("de")}
-        </>
-      ),
-    },
-    {
+      key: "actions",
       title: "",
+      getValueFromItem: () => null,
       Item: (props) => <button>💾</button>,
+      columnWidth: 60,
     },
   ]);
 
+  const context = personGrid.buildContext({
+    columns: columns,
+    gridKey: "person-grid",
+    items: () => store.persons ?? [],
+  });
+
   return (
-    <div
-      style={{
-        height: "100%",
-        display: "flex",
-        "flex-direction": "column",
-        overflow: "hidden",
-      }}
-    >
-      <div style={{ flex: "0 0 auto" }}>
-        <h1>Solid data grid</h1>
-        <button
-          onClick={async () => {
-            loadMockPersons(personCount).then((persons) => {
-              updateStore(reconcile({ persons }));
-            });
-          }}
+    <DataGridContextProvider value={context}>
+      <div
+        style={{
+          height: "100%",
+          display: "flex",
+          "flex-direction": "column",
+          overflow: "hidden",
+        }}
+      >
+        <div style={{ flex: "0 0 auto" }}>
+          <h1>Solid data grid</h1>
+          <button
+            onClick={async () => {
+              loadMockPersons(personCount).then(
+                (persons) => {
+                  updateStore(
+                    reconcile({ ...store, persons })
+                  );
+                }
+              );
+            }}
+          >
+            Refetch data
+          </button>
+          <button
+            onClick={() =>
+              updateStore(
+                "dummyColumnCount",
+                store.dummyColumnCount - 1
+              )
+            }
+          >
+            Less dummy columns
+          </button>
+          <button
+            onClick={() =>
+              updateStore(
+                "dummyColumnCount",
+                store.dummyColumnCount + 1
+              )
+            }
+          >
+            More dummy columns
+          </button>
+        </div>
+        <div
+          style={{ flex: "1 1 auto", overflow: "hidden" }}
         >
-          Refetch data
-        </button>
+          <AutoSizer>
+            {(dimensions) => (
+              <DataGrid
+                context={context}
+                width={dimensions().width}
+                height={dimensions().height}
+              />
+            )}
+          </AutoSizer>
+        </div>
       </div>
-      <div style={{ flex: "1 1 auto", overflow: "hidden" }}>
-        <AutoSizer>
-          {(dimensions) => (
-            <personGrid.Grid
-              columns={columns}
-              items={store.persons ?? []}
-              width={dimensions().width}
-              height={dimensions().height}
-            />
-          )}
-        </AutoSizer>
-      </div>
-    </div>
+    </DataGridContextProvider>
   );
 }
 

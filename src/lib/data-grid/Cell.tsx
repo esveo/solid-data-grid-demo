@@ -1,4 +1,4 @@
-import { createSignal } from "solid-js";
+import { createSignal, Show } from "solid-js";
 import { Dynamic } from "solid-js/web";
 import { assertNever } from "../helpers/tsUtils";
 import { defineScope } from "../scoped-classes/scoped";
@@ -6,10 +6,7 @@ import { VirtualizedGridCellProps } from "../virtualized-grid/VirtualizedGrid";
 import "./Cell.scss";
 import { ColumnTemplate } from "./ColumnTemplate";
 import { dataGridCssScope } from "./cssScope";
-import {
-  dataGridColumnWidth,
-  setDataGridColumnWidth,
-} from "./Grid";
+import { useDataGridContext } from "./GridContext";
 import { HeaderRow, ItemRow, Row } from "./Row";
 
 export function DataGridCell<TItem>(
@@ -35,6 +32,13 @@ function HeaderCell<TItem>(
     ColumnTemplate<TItem>
   >
 ) {
+  const gridContext = useDataGridContext<TItem>();
+  const columnWidthDefinition = props.column.columnWidth();
+  const columnWidth = () =>
+    typeof columnWidthDefinition === "number"
+      ? columnWidthDefinition
+      : columnWidthDefinition[0]();
+
   const [dragStart, setDragStart] = createSignal<{
     x: number;
     initialColumnWidth: number;
@@ -60,7 +64,7 @@ function HeaderCell<TItem>(
     e.preventDefault();
     setDragStart({
       x: e.clientX,
-      initialColumnWidth: dataGridColumnWidth(),
+      initialColumnWidth: columnWidth(),
     });
     document.addEventListener("pointermove", handleDrag);
     document.addEventListener("pointerup", handleDragEnd);
@@ -70,7 +74,7 @@ function HeaderCell<TItem>(
     setDragPosition({ x: e.clientX });
     const newWidth =
       (dragStart()?.initialColumnWidth ?? 0) + diff();
-    setDataGridColumnWidth(newWidth);
+    gridContext.resizeColumn(props.column, newWidth);
   }
 
   function handleDragEnd(e: PointerEvent) {
@@ -89,7 +93,11 @@ function HeaderCell<TItem>(
       style={props.style()}
       onPointerDown={handleDragStart}
     >
-      <div class={css("__header-cell-resize-handle")}></div>
+      <Show when={Array.isArray(columnWidthDefinition)}>
+        <div
+          class={css("__header-cell-resize-handle")}
+        ></div>
+      </Show>
       {props.column.title}
     </div>
   );
@@ -101,12 +109,14 @@ function ItemCell<TItem>(
     ColumnTemplate<TItem>
   >
 ) {
+  const context = useDataGridContext<TItem>();
   return (
     <div style={props.style()}>
       <Dynamic
         component={props.column.Item}
         item={props.row.item}
         template={props.column}
+        context={() => context}
       />
     </div>
   );

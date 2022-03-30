@@ -51,12 +51,12 @@ export function VirtualizedGrid<TRow, TColumn>(
     () => scrollBarDummy
   );
 
-  const indexedColumns = createMemo(() =>
-    indexItems(props.columns)
+  const indexedColumns = createMemo(
+    indexItems(() => props.columns)
   );
 
-  const indexedRows = createMemo(() =>
-    indexItems(props.rows)
+  const indexedRows = createMemo(
+    indexItems(() => props.rows)
   );
 
   const columnRanges = createMemo(() =>

@@ -1,5 +1,4 @@
 import {
-  createEffect,
   createMemo,
   createSignal,
   mapArray,
@@ -7,14 +6,13 @@ import {
 import { assertNever } from "../helpers/tsUtils";
 import { VirtualizedGrid } from "../virtualized-grid/VirtualizedGrid";
 import { DataGridCell } from "./Cell";
-import { ColumnTemplate } from "./ColumnTemplate";
+import { DataGridContext } from "./GridContext";
 import { HeaderRow, ItemRow, Row } from "./Row";
 
 export type DataGridProps<TItem> = {
   width: number;
   height: number;
-  items: TItem[];
-  columns: ColumnTemplate<TItem>[];
+  context: DataGridContext<TItem>;
 };
 
 export const [dataGridColumnWidth, setDataGridColumnWidth] =
@@ -23,31 +21,36 @@ export const [dataGridColumnWidth, setDataGridColumnWidth] =
 export function DataGrid<TItem>(
   props: DataGridProps<TItem>
 ) {
+  const [columnWidths, setColumnWidths] = createSignal();
+
   const headerRow: HeaderRow<TItem> = {
     type: "HEADER_ROW",
   };
-  const rows = createMemo(() => {
-    const itemRows: Row<TItem>[] = mapArray(
-      () => props.items,
+
+  const itemRows = createMemo(
+    mapArray(
+      props.context.items,
       (item): ItemRow<TItem> => ({ item, type: "ITEM_ROW" })
-    )();
+    )
+  );
 
-    itemRows.unshift(headerRow);
+  const rows = createMemo(() => {
+    const rows: Row<TItem>[] = itemRows();
 
-    return itemRows;
-  });
+    rows.unshift(headerRow);
 
-  createEffect(() => {
-    dataGridColumnWidth();
+    return rows;
   });
 
   return (
     <VirtualizedGrid
       rows={rows()}
-      columns={props.columns}
-      getColumnWidth={(c) =>
-        c.title === "Country" ? dataGridColumnWidth() : 500
-      }
+      columns={props.context.columns()}
+      getColumnWidth={(c) => {
+        const width = c.columnWidth();
+        if (typeof width === "number") return width;
+        return width[0]();
+      }}
       getRowHeight={(row) => {
         switch (row.type) {
           case "HEADER_ROW":
@@ -58,10 +61,10 @@ export function DataGrid<TItem>(
             assertNever(row);
         }
       }}
-      frozenAreas={{ top: 1, left: 3, bottom: 5 }}
+      frozenAreas={{ top: 1 }}
       height={props.height}
       width={props.width}
-      cell={DataGridCell}
+      cell={(props) => <DataGridCell {...props} />}
     />
   );
 }

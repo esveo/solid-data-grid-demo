@@ -1,13 +1,30 @@
-import { ColumnTemplate } from "./ColumnTemplate";
-import { DataGrid, DataGridProps } from "./Grid";
+import { Accessor } from "solid-js";
+import { ColumnTemplateDefinition } from "./ColumnTemplate";
+import {
+  DataGridContext,
+  DataGridContextInput,
+  useDataGridContext,
+} from "./GridContext";
 
-export function createGrid<TItem>() {
+export function createGridBuilder<TItem>() {
   return {
-    buildColumns(definitions: ColumnTemplate<TItem>[]) {
-      return definitions;
+    buildColumns(
+      definitions: (
+        | ColumnTemplateDefinition<TItem>
+        | Accessor<ColumnTemplateDefinition<TItem>[]>
+      )[]
+    ) {
+      return () =>
+        definitions.flatMap((d) => {
+          if (typeof d === "function") return d();
+          return d;
+        });
     },
-    Grid(props: DataGridProps<TItem>) {
-      return <DataGrid {...props} />;
+    buildContext(input: DataGridContextInput<TItem>) {
+      return new DataGridContext(input);
+    },
+    useContext() {
+      return useDataGridContext<TItem>();
     },
   };
 }

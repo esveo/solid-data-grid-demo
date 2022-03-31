@@ -11,3 +11,5 @@ export function assertNever(x: never): never {
 }
 
 export type ObjectOf<TValue> = Record<string, TValue>;
+
+export type SingleOrArray<T> = T | ReadonlyArray<T>;

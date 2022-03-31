@@ -1,3 +1,5 @@
+import { ObjectOf, SingleOrArray } from "./tsUtils";
+
 export function range(from: number, to: number) {
   const result: number[] = [];
   for (let i = from; i < to; i++) {
@@ -51,5 +53,38 @@ export function mapValues<TObject, TNewValue>(
   for (const [key, value] of Object.entries(object)) {
     result[key] = mapper(value, key as any, object);
   }
+  return result;
+}
+
+export function groupByMultiple<TItem>(
+  items: ReadonlyArray<TItem>,
+  getGroupCriteria: (
+    item: TItem
+  ) => SingleOrArray<
+    string | number | boolean | null | undefined
+  >
+) {
+  const result: ObjectOf<TItem[]> = {};
+
+  for (const item of items) {
+    const criteria = getGroupCriteria(item);
+    const criteriaArray: (
+      | string
+      | number
+      | boolean
+      | null
+      | undefined
+    )[] = Array.isArray(criteria) ? criteria : [criteria];
+
+    for (const criteriaValue of criteriaArray) {
+      const key = String(criteriaValue ?? "---");
+      if (!result[key]) {
+        result[key] = [];
+      }
+
+      result[key]!.push(item);
+    }
+  }
+
   return result;
 }

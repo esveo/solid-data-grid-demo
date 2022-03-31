@@ -23,6 +23,7 @@ import {
   ColumnTemplate,
   ColumnTemplateDefinition,
 } from "./ColumnTemplate";
+import { buildTree, flattenTree } from "./groups";
 
 export type DataGridContextInput<TItem> = {
   gridKey: string;
@@ -81,6 +82,7 @@ export class DataGridContext<TItem> {
         columnKey: string;
         direction: SortDirection;
       },
+      groupByColumnKeys: [] as string[],
     });
   }
 
@@ -153,6 +155,23 @@ export class DataGridContext<TItem> {
         .map((n) => n.item);
     });
 
+    $.groupByColumns = createMemo(() => {
+      const columnsByKey = $.columnsByKey();
+      return this.state.groupByColumnKeys
+        .map((key) => columnsByKey[key]!)
+        .filter((c) => !!c?.groupBy);
+    });
+
+    $.itemTree = buildTree({
+      context: () => this,
+      groupByColumns: $.groupByColumns,
+      items: $.sortedItems,
+    });
+
+    $.flatTree = flattenTree($.itemTree);
+
+    // $.flattenedItemTree = createMemo(() => )
+
     return $ as Omit<typeof $, keyof Function>;
   }
 
@@ -201,6 +220,34 @@ export class DataGridContext<TItem> {
       if (newIndex === -1) newIndex = targetArea.length;
 
       targetArea.splice(newIndex, 0, columnKey);
+    });
+  }
+
+  groupBy(columnKey: string, placeBefore?: string) {
+    this.updateStore((draft) => {
+      draft.groupByColumnKeys =
+        draft.groupByColumnKeys.filter(
+          (key) => key !== columnKey
+        );
+      let newIndex = placeBefore
+        ? draft.groupByColumnKeys.indexOf(placeBefore)
+        : -1;
+      if (newIndex === -1)
+        newIndex = draft.groupByColumnKeys.length;
+      draft.groupByColumnKeys.splice(
+        newIndex,
+        0,
+        columnKey
+      );
+    });
+  }
+
+  removeFromGroups(columnKey: string) {
+    this.updateStore((draft) => {
+      draft.groupByColumnKeys =
+        draft.groupByColumnKeys.filter(
+          (key) => key !== columnKey
+        );
     });
   }
 }

@@ -1,11 +1,16 @@
 import { seed } from "@ngneat/falso";
-import { createEffect } from "solid-js";
+import {
+  Accessor,
+  createEffect,
+  createMemo,
+} from "solid-js";
 import { createStore, reconcile } from "solid-js/store";
 import { dynamicColumns } from "./lib/data-grid/ColumnTemplate";
 import { DataGrid } from "./lib/data-grid/Grid";
 import { createGridBuilder } from "./lib/data-grid/gridBuilder";
 import { DataGridContextProvider } from "./lib/data-grid/GridContext";
-import { range } from "./lib/helpers/arrayHelpers";
+import { defaultGroupBy } from "./lib/data-grid/groups";
+import { last, range } from "./lib/helpers/arrayHelpers";
 import { AutoSizer } from "./lib/measure-dom/AutoSizer";
 import {
   loadMockPersons,
@@ -33,6 +38,13 @@ function App() {
 
   const columns = personGrid.buildColumns([
     {
+      key: "Title",
+      valueFromItem: (props) => props.item.name,
+      valueFromGroupRow: (props) =>
+        last(props.row.path) ?? "All",
+      frozen: "LEFT",
+    },
+    {
       key: "Id",
       valueFromItem: (props) => props.item.id,
       frozen: "LEFT",
@@ -45,6 +57,7 @@ function App() {
     {
       key: "Country",
       valueFromItem: (props) => props.item.country,
+      groupBy: defaultGroupBy,
     },
     dynamicColumns(
       () => range(0, store.dummyColumnCount),
@@ -58,6 +71,10 @@ function App() {
       valueFromItem: (props) =>
         props.item.dateOfBirth.toLocaleDateString(),
       sortBy: (props) => props.item.dateOfBirth,
+      groupBy: (props) =>
+        props.item.dateOfBirth.getFullYear() > 1992
+          ? "Preeetty old"
+          : "Quite young",
     },
     {
       key: "actions",
@@ -75,6 +92,18 @@ function App() {
     gridKey: "person-grid",
     items: () => store.persons ?? [],
   });
+
+  function createLoggingMemo<T>(
+    log: string,
+    value: Accessor<T>
+  ) {
+    const memo = createMemo(value);
+    createEffect(() => {
+      const newValue = memo();
+      console.log(log, newValue);
+    });
+    return memo;
+  }
 
   Object.assign(window, { context });
 

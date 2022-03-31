@@ -7,7 +7,7 @@ import { assertNever } from "../helpers/tsUtils";
 import { VirtualizedGrid } from "../virtualized-grid/VirtualizedGrid";
 import { DataGridCell } from "./Cell";
 import { DataGridContext } from "./GridContext";
-import { HeaderRow, ItemRow } from "./Row";
+import { DataRow, HeaderRow } from "./Row";
 
 export type DataGridProps<TItem> = {
   width: number;
@@ -25,15 +25,32 @@ export function DataGrid<TItem>(
     type: "HEADER_ROW",
   };
 
-  const itemRows = createMemo(
+  const dataRows = createMemo(
     mapArray(
-      props.context.derivations.sortedItems,
-      (item): ItemRow<TItem> => ({ item, type: "ITEM_ROW" })
+      props.context.derivations.flatTree,
+      (node): DataRow<TItem> => {
+        switch (node.type) {
+          case "GROUP_NODE":
+            return {
+              type: "GROUP_ROW",
+              items: node.items,
+              path: node.path,
+            };
+          case "ITEM_NODE":
+            return {
+              type: "ITEM_ROW",
+              item: node.item,
+              path: node.path,
+            };
+          default:
+            assertNever(node);
+        }
+      }
     )
   );
 
   const rows = createMemo(() => {
-    const rows = [headerRow, ...itemRows()];
+    const rows = [headerRow, ...dataRows()];
 
     return rows;
   });
@@ -58,6 +75,8 @@ export function DataGrid<TItem>(
           case "HEADER_ROW":
             return 40;
           case "ITEM_ROW":
+            return 30;
+          case "GROUP_ROW":
             return 30;
           default:
             assertNever(row);

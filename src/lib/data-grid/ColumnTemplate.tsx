@@ -4,8 +4,10 @@ import {
   JSX,
   mapArray,
 } from "solid-js";
+import { SingleOrArray } from "../helpers/tsUtils";
 import { DefaultRenderer } from "./cell-renderers/DefaultRenderer";
 import { DataGridContext } from "./GridContext";
+import { GroupRow } from "./Row";
 
 export type ColumnFunctionArgs<TItem> = {
   template: ColumnTemplate<TItem>;
@@ -25,9 +27,33 @@ export type ColumnTemplate<TItem> = {
       item: TItem;
     } & ColumnFunctionArgs<TItem>
   ) => JSX.Element;
+  valueFromGroupRow?: (
+    props: {
+      row: GroupRow<TItem>;
+    } & ColumnFunctionArgs<TItem>
+  ) => number | string | boolean | null | undefined;
+
+  /**
+   * The component that will be rendered for each group cell
+   * of that column.
+   *
+   * Defaults to `valueFromGroupRow`
+   */
+  GroupRow: (
+    props: {
+      row: GroupRow<TItem>;
+    } & ColumnFunctionArgs<TItem>
+  ) => JSX.Element;
   columnWidth: number;
   resizable: boolean;
   frozen: "LEFT" | "RIGHT" | "UNFROZEN";
+  groupBy?: (
+    props: {
+      item: TItem;
+    } & ColumnFunctionArgs<TItem>
+  ) => SingleOrArray<
+    string | number | boolean | null | undefined
+  >;
   sortBy: (
     props: {
       item: TItem;
@@ -61,11 +87,40 @@ export type ColumnTemplateDefinition<TItem> = {
     } & ColumnFunctionArgs<TItem>
   ) => JSX.Element;
 
+  /**
+   * Return a displayable primitive value from the group row
+   */
+  valueFromGroupRow?: (
+    props: {
+      row: GroupRow<TItem>;
+    } & ColumnFunctionArgs<TItem>
+  ) => number | string | boolean | null | undefined;
+
+  /**
+   * The component that will be rendered for each group cell
+   * of that column.
+   *
+   * Defaults to `valueFromGroupRow`
+   */
+  GroupRow?: (
+    props: {
+      row: GroupRow<TItem>;
+    } & ColumnFunctionArgs<TItem>
+  ) => JSX.Element;
+
   columnWidth?: number;
 
   resizable?: boolean;
 
   frozen?: "LEFT" | "RIGHT";
+
+  groupBy?: (
+    props: {
+      item: TItem;
+    } & ColumnFunctionArgs<TItem>
+  ) => SingleOrArray<
+    string | number | boolean | null | undefined
+  >;
 
   /**
    * Retrieve the sorting criteria from an item
@@ -101,6 +156,14 @@ export function addDefaultsToColumnTemplateDefinition<
       ((props) => (
         <DefaultRenderer
           content={template.valueFromItem(props)}
+        ></DefaultRenderer>
+      )),
+
+    GroupRow:
+      definition.GroupRow ??
+      ((props) => (
+        <DefaultRenderer
+          content={template.valueFromGroupRow?.(props)}
         ></DefaultRenderer>
       )),
 

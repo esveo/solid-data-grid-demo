@@ -7,7 +7,7 @@ import "./Cell.scss";
 import { ColumnTemplate } from "./ColumnTemplate";
 import { dataGridCssScope } from "./cssScope";
 import { useDataGridContext } from "./GridContext";
-import { HeaderRow, ItemRow, Row } from "./Row";
+import { GroupRow, HeaderRow, ItemRow, Row } from "./Row";
 
 export function DataGridCell<TItem>(
   props: VirtualizedGridCellProps<
@@ -21,6 +21,8 @@ export function DataGridCell<TItem>(
       return <HeaderCell {...(props as any)} />;
     case "ITEM_ROW":
       return <ItemCell {...(props as any)} />;
+    case "GROUP_ROW":
+      return <GroupCell {...(props as any)} />;
     default:
       assertNever(props.row);
   }
@@ -120,6 +122,28 @@ function ItemCell<TItem>(
       <Dynamic
         component={props.column.Item}
         item={props.row.item}
+        template={props.column}
+        context={() => context}
+      />
+    </div>
+  );
+}
+
+function GroupCell<TItem>(
+  props: VirtualizedGridCellProps<
+    GroupRow<TItem>,
+    ColumnTemplate<TItem>
+  >
+) {
+  const context = useDataGridContext<TItem>();
+  return (
+    <div
+      style={props.style()}
+      class={css("__cell", "__body-cell", "__group-cell")}
+    >
+      <Dynamic
+        component={props.column.GroupRow}
+        row={props.row}
         template={props.column}
         context={() => context}
       />

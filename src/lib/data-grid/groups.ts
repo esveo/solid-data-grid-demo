@@ -43,7 +43,7 @@ export function buildTree<TItem>(config: {
       () => groupByColumns()[0]
     );
     const nextGroupByFunction = createMemo(
-      () => nextGroupBy()?.groupBy
+      () => nextGroupBy()?.valueFromItem
     );
     const remainingGroupBys = createMemo(() =>
       groupByColumns().slice(1)
@@ -146,12 +146,4 @@ export function flattenTree<TItem>(
 
 export function pathKeyFromPath(path: string[]) {
   return path.join("//");
-}
-
-export function defaultGroupBy<TItem>(
-  ...args: Parameters<
-    NonNullable<ColumnTemplate<TItem>["groupBy"]>
-  >
-) {
-  return args[0].template.valueFromItem(...args);
 }

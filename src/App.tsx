@@ -10,7 +10,6 @@ import { dynamicColumns } from "./lib/data-grid/ColumnTemplate";
 import { DataGrid } from "./lib/data-grid/Grid";
 import { createGridBuilder } from "./lib/data-grid/gridBuilder";
 import { DataGridContextProvider } from "./lib/data-grid/GridContext";
-import { defaultGroupBy } from "./lib/data-grid/groups";
 import { range } from "./lib/helpers/arrayHelpers";
 import { AutoSizer } from "./lib/measure-dom/AutoSizer";
 import {
@@ -55,7 +54,7 @@ function App() {
     {
       key: "Country",
       valueFromItem: (props) => props.item.country,
-      groupBy: defaultGroupBy,
+      groupable: true,
     },
     dynamicColumns(
       () => range(0, store.dummyColumnCount),
@@ -69,10 +68,14 @@ function App() {
       valueFromItem: (props) =>
         props.item.dateOfBirth.toLocaleDateString(),
       sortBy: (props) => props.item.dateOfBirth,
-      groupBy: (props) =>
+    },
+    {
+      key: "Age group",
+      valueFromItem: (props) =>
         props.item.dateOfBirth.getFullYear() > 1992
           ? "Preeetty old"
           : "Quite young",
+      groupable: true,
     },
     {
       key: "actions",
@@ -90,7 +93,7 @@ function App() {
     gridKey: "person-grid",
     items: () => store.persons ?? [],
     initialState: {
-      groupByColumnKeys: ["Country", "Date of Birth"],
+      groupByColumnKeys: [],
     },
   });
 

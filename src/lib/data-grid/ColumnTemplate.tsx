@@ -4,7 +4,6 @@ import {
   JSX,
   mapArray,
 } from "solid-js";
-import { SingleOrArray } from "../helpers/tsUtils";
 import { DefaultRenderer } from "./cell-renderers/DefaultRenderer";
 import { DataGridContext } from "./GridContext";
 import { GroupRow, ItemRow } from "./Row";
@@ -47,13 +46,7 @@ export type ColumnTemplate<TItem> = {
   columnWidth: number;
   resizable: boolean;
   frozen: "LEFT" | "RIGHT" | "UNFROZEN";
-  groupBy?: (
-    props: {
-      item: TItem;
-    } & ColumnFunctionArgs<TItem>
-  ) => SingleOrArray<
-    string | number | boolean | null | undefined
-  >;
+  groupable: boolean;
   sortBy: (
     props: {
       item: TItem;
@@ -114,13 +107,7 @@ export type ColumnTemplateDefinition<TItem> = {
 
   frozen?: "LEFT" | "RIGHT";
 
-  groupBy?: (
-    props: {
-      item: TItem;
-    } & ColumnFunctionArgs<TItem>
-  ) => SingleOrArray<
-    string | number | boolean | null | undefined
-  >;
+  groupable?: boolean;
 
   /**
    * Retrieve the sorting criteria from an item
@@ -169,6 +156,7 @@ export function addDefaultsToColumnTemplateDefinition<
           content={template.valueFromGroupRow?.(props)}
         ></DefaultRenderer>
       )),
+    groupable: definition.groupable ?? false,
 
     frozen: definition.frozen ?? "UNFROZEN",
 

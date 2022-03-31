@@ -177,7 +177,7 @@ export class DataGridContext<TItem> {
       const columnsByKey = $.columnsByKey();
       return this.state.groupByColumnKeys
         .map((key) => columnsByKey[key]!)
-        .filter((c) => !!c?.groupBy);
+        .filter((c) => !!c?.groupable);
     });
 
     $.itemTree = buildTree({
@@ -207,16 +207,15 @@ export class DataGridContext<TItem> {
   }
 
   sortByColumn(
-    column: ColumnTemplate<TItem>,
+    columnKey: string,
     direction: SortDirection
   ) {
-    this.updateStore(
-      (draft) =>
-        (draft.sortBy = {
-          columnKey: column.key,
-          direction,
-        })
-    );
+    const column =
+      this.derivations.columnsByKey()[columnKey];
+    if (!column) return;
+    this.updateStore((draft) => {
+      draft.sortBy = { columnKey, direction };
+    });
   }
 
   moveColumn(

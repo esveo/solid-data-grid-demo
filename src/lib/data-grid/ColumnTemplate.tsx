@@ -7,7 +7,7 @@ import {
 import { SingleOrArray } from "../helpers/tsUtils";
 import { DefaultRenderer } from "./cell-renderers/DefaultRenderer";
 import { DataGridContext } from "./GridContext";
-import { GroupRow } from "./Row";
+import { GroupRow, ItemRow } from "./Row";
 
 export type ColumnFunctionArgs<TItem> = {
   template: ColumnTemplate<TItem>;
@@ -24,7 +24,7 @@ export type ColumnTemplate<TItem> = {
   ) => number | string | boolean | null | undefined;
   Item: (
     props: {
-      item: TItem;
+      row: ItemRow<TItem>;
     } & ColumnFunctionArgs<TItem>
   ) => JSX.Element;
   valueFromGroupRow?: (
@@ -39,7 +39,7 @@ export type ColumnTemplate<TItem> = {
    *
    * Defaults to `valueFromGroupRow`
    */
-  GroupRow: (
+  Group: (
     props: {
       row: GroupRow<TItem>;
     } & ColumnFunctionArgs<TItem>
@@ -83,7 +83,7 @@ export type ColumnTemplateDefinition<TItem> = {
    */
   Item?: (
     props: {
-      item: TItem;
+      row: ItemRow<TItem>;
     } & ColumnFunctionArgs<TItem>
   ) => JSX.Element;
 
@@ -102,7 +102,7 @@ export type ColumnTemplateDefinition<TItem> = {
    *
    * Defaults to `valueFromGroupRow`
    */
-  GroupRow?: (
+  Group?: (
     props: {
       row: GroupRow<TItem>;
     } & ColumnFunctionArgs<TItem>
@@ -155,12 +155,15 @@ export function addDefaultsToColumnTemplateDefinition<
       definition.Item ??
       ((props) => (
         <DefaultRenderer
-          content={template.valueFromItem(props)}
+          content={template.valueFromItem({
+            ...props,
+            item: props.row.item,
+          })}
         ></DefaultRenderer>
       )),
 
-    GroupRow:
-      definition.GroupRow ??
+    Group:
+      definition.Group ??
       ((props) => (
         <DefaultRenderer
           content={template.valueFromGroupRow?.(props)}

@@ -23,7 +23,12 @@ import {
   ColumnTemplate,
   ColumnTemplateDefinition,
 } from "./ColumnTemplate";
-import { buildTree, flattenTree } from "./groups";
+import {
+  buildTree,
+  flattenTree,
+  pathKeyFromPath,
+} from "./groups";
+import { GroupRow } from "./Row";
 
 export type DataGridContextInput<TItem> = {
   gridKey: string;
@@ -31,6 +36,14 @@ export type DataGridContextInput<TItem> = {
     ColumnTemplateDefinition<TItem>[]
   >;
   items: Accessor<TItem[]>;
+  showAllRow?: Accessor<boolean>;
+
+  headerHeight?: number;
+  groupRowHeight?: number;
+  itemRowHeight?: number;
+  initialState?: Partial<
+    ReturnType<DataGridContext<TItem>["buildStore"]>[0]
+  >;
 };
 
 export class DataGridContext<TItem> {
@@ -71,7 +84,8 @@ export class DataGridContext<TItem> {
   }
 
   private buildStore() {
-    return createStore({
+    const init = this.input.initialState as any;
+    const state = {
       columnKeysByArea: {
         LEFT: [],
         RIGHT: [],
@@ -83,7 +97,11 @@ export class DataGridContext<TItem> {
         direction: SortDirection;
       },
       groupByColumnKeys: [] as string[],
-    });
+      expandedPaths: {} as ObjectOf<true>,
+    };
+
+    Object.assign(state, init);
+    return createStore(state);
   }
 
   private deriveData() {
@@ -168,9 +186,11 @@ export class DataGridContext<TItem> {
       items: $.sortedItems,
     });
 
-    $.flatTree = flattenTree($.itemTree);
-
-    // $.flattenedItemTree = createMemo(() => )
+    $.flatTree = flattenTree(
+      $.itemTree,
+      () => this.state.expandedPaths,
+      this.input.showAllRow
+    );
 
     return $ as Omit<typeof $, keyof Function>;
   }
@@ -249,6 +269,20 @@ export class DataGridContext<TItem> {
           (key) => key !== columnKey
         );
     });
+  }
+
+  toggleRowExpansion(row: GroupRow<TItem>) {
+    const pathKey = pathKeyFromPath(row.path);
+    this.updateStore((draft) => {
+      if (pathKey in draft.expandedPaths)
+        delete draft.expandedPaths[pathKey];
+      else draft.expandedPaths[pathKey] = true;
+    });
+  }
+
+  isRowExpanded(row: GroupRow<TItem>) {
+    const pathKey = pathKeyFromPath(row.path);
+    return pathKey in this.state.expandedPaths;
   }
 }
 

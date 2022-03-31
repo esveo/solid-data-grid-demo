@@ -121,7 +121,7 @@ function ItemCell<TItem>(
     >
       <Dynamic
         component={props.column.Item}
-        item={props.row.item}
+        row={props.row}
         template={props.column}
         context={() => context}
       />
@@ -142,7 +142,7 @@ function GroupCell<TItem>(
       class={css("__cell", "__body-cell", "__group-cell")}
     >
       <Dynamic
-        component={props.column.GroupRow}
+        component={props.column.Group}
         row={props.row}
         template={props.column}
         context={() => context}

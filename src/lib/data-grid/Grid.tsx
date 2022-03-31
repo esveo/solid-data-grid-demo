@@ -6,29 +6,27 @@ import {
 import { assertNever } from "../helpers/tsUtils";
 import { VirtualizedGrid } from "../virtualized-grid/VirtualizedGrid";
 import { DataGridCell } from "./Cell";
-import { DataGridContext } from "./GridContext";
+import { useDataGridContext } from "./GridContext";
 import { DataRow, HeaderRow } from "./Row";
 
-export type DataGridProps<TItem> = {
+export type DataGridProps = {
   width: number;
   height: number;
-  context: DataGridContext<TItem>;
 };
 
 export const [dataGridColumnWidth, setDataGridColumnWidth] =
   createSignal(200);
 
-export function DataGrid<TItem>(
-  props: DataGridProps<TItem>
-) {
-  const headerRow: HeaderRow<TItem> = {
+export function DataGrid(props: DataGridProps) {
+  const context = useDataGridContext<unknown>();
+  const headerRow: HeaderRow<unknown> = {
     type: "HEADER_ROW",
   };
 
   const dataRows = createMemo(
     mapArray(
-      props.context.derivations.flatTree,
-      (node): DataRow<TItem> => {
+      context.derivations.flatTree,
+      (node): DataRow<unknown> => {
         switch (node.type) {
           case "GROUP_NODE":
             return {
@@ -55,29 +53,27 @@ export function DataGrid<TItem>(
     return rows;
   });
 
-  const columnsByArea =
-    props.context.derivations.columnsByArea;
+  const columnsByArea = context.derivations.columnsByArea;
 
   return (
     <VirtualizedGrid
       rows={rows()}
       columns={[
-        ...props.context.derivations.columnsByArea().LEFT,
-        ...props.context.derivations.columnsByArea()
-          .UNFROZEN,
-        ...props.context.derivations.columnsByArea().RIGHT,
+        ...context.derivations.columnsByArea().LEFT,
+        ...context.derivations.columnsByArea().UNFROZEN,
+        ...context.derivations.columnsByArea().RIGHT,
       ].filter(Boolean)}
       getColumnWidth={(c) =>
-        props.context.derivations.getColumnWidth(c.key)
+        context.derivations.getColumnWidth(c.key)
       }
       getRowHeight={(row) => {
         switch (row.type) {
           case "HEADER_ROW":
-            return 40;
+            return context.input.headerHeight ?? 50;
           case "ITEM_ROW":
-            return 30;
+            return context.input.itemRowHeight ?? 30;
           case "GROUP_ROW":
-            return 30;
+            return context.input.groupRowHeight ?? 30;
           default:
             assertNever(row);
         }

@@ -33,10 +33,12 @@
 
   &__string-renderer {
     height: 100%;
+    width: 100%;
     display: flex;
     align-items: center;
     padding: 0 0.5rem;
     box-sizing: border-box;
+    overflow: hidden;
   }
 
   &__string-renderer--content {
@@ -47,16 +49,43 @@
 
   &__number-renderer {
     height: 100%;
+    width: 100%;
     display: flex;
     align-items: center;
     justify-content: flex-end;
     padding: 0 0.5rem;
     box-sizing: border-box;
+    overflow: hidden;
   }
 
   &__number-renderer--content {
     text-overflow: ellipsis;
     white-space: nowrap;
     overflow: hidden;
+  }
+
+  &__title-renderer {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    padding: 0 0.5rem;
+    padding-left: calc(var(--level) * 20px);
+    box-sizing: border-box;
+    overflow: hidden;
+
+
+    &-expansion-toggle {
+      flex: 0 0 auto;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+      padding: 0.4rem 0.25rem 0.4rem 0.75rem;
+      width: 2.5rem;
+
+      &:hover {
+        color: blue;
+      }
+    }
   }
 }

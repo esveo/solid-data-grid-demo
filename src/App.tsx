@@ -5,12 +5,13 @@ import {
   createMemo,
 } from "solid-js";
 import { createStore, reconcile } from "solid-js/store";
+import { TitleRenderer } from "./lib/data-grid/cell-renderers/TitleRenderer";
 import { dynamicColumns } from "./lib/data-grid/ColumnTemplate";
 import { DataGrid } from "./lib/data-grid/Grid";
 import { createGridBuilder } from "./lib/data-grid/gridBuilder";
 import { DataGridContextProvider } from "./lib/data-grid/GridContext";
 import { defaultGroupBy } from "./lib/data-grid/groups";
-import { last, range } from "./lib/helpers/arrayHelpers";
+import { range } from "./lib/helpers/arrayHelpers";
 import { AutoSizer } from "./lib/measure-dom/AutoSizer";
 import {
   loadMockPersons,
@@ -40,19 +41,16 @@ function App() {
     {
       key: "Title",
       valueFromItem: (props) => props.item.name,
-      valueFromGroupRow: (props) =>
-        last(props.row.path) ?? "All",
+      Item: TitleRenderer,
+      Group: TitleRenderer,
       frozen: "LEFT",
+      columnWidth: 300,
     },
     {
       key: "Id",
       valueFromItem: (props) => props.item.id,
       frozen: "LEFT",
       columnWidth: 80,
-    },
-    {
-      key: "Name",
-      valueFromItem: (props) => props.item.name,
     },
     {
       key: "Country",
@@ -91,6 +89,9 @@ function App() {
     columnDefinitions: columns,
     gridKey: "person-grid",
     items: () => store.persons ?? [],
+    initialState: {
+      groupByColumnKeys: ["Country", "Date of Birth"],
+    },
   });
 
   function createLoggingMemo<T>(
@@ -164,7 +165,6 @@ function App() {
           <AutoSizer>
             {(dimensions) => (
               <DataGrid
-                context={context}
                 width={dimensions().width}
                 height={dimensions().height}
               />

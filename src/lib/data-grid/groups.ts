@@ -1,16 +1,19 @@
 import { Accessor, createMemo, mapArray } from "solid-js";
 import { groupByMultiple } from "../helpers/arrayHelpers";
+import { ObjectOf } from "../helpers/tsUtils";
 import { ColumnTemplate } from "./ColumnTemplate";
 import { DataGridContext } from "./GridContext";
 
 export type GroupNode<TItem> = {
   path: string[];
+  pathKey: string;
   items: Accessor<TItem[]>;
-  childNodes: Accessor<GroupNode<TItem>[] | undefined>;
+  childNodes: Accessor<Node<TItem>[]>;
   type: "GROUP_NODE";
 };
 export type ItemNode<TItem> = {
   path: string[];
+  pathKey: string;
   item: TItem;
   type: "ITEM_NODE";
 };
@@ -71,10 +74,20 @@ export function buildTree<TItem>(config: {
       return {
         type: "GROUP_NODE",
         path,
+        pathKey: pathKeyFromPath(path),
         items,
         childNodes: createMemo(() => {
           const hasNext = hasNextGroupBy();
-          if (!hasNext) return undefined;
+          if (!hasNext)
+            return mapArray(
+              items,
+              (item): Node<TItem> => ({
+                type: "ITEM_NODE",
+                item,
+                path,
+                pathKey: pathKeyFromPath(path),
+              })
+            )();
           return mapArray(groupKeys, (key) => {
             const items = createMemo(() => groups()![key]!);
             return buildTreeRecursively(
@@ -93,35 +106,46 @@ export function buildTree<TItem>(config: {
 }
 
 export function flattenTree<TItem>(
-  node: Accessor<GroupNode<TItem>>
+  node: Accessor<GroupNode<TItem>>,
+  expandedPaths: Accessor<ObjectOf<true>>,
+  includeRoot?: Accessor<boolean>
 ): Accessor<Node<TItem>[]> {
   const result = createMemo(() =>
-    flattenTreeRecursively(node(), [])
+    flattenTreeRecursively(
+      node(),
+      [],
+      expandedPaths(),
+      includeRoot?.()
+    )
   );
   return result;
 
   function flattenTreeRecursively(
-    node: GroupNode<TItem>,
-    list: Node<TItem>[]
+    node: Node<TItem>,
+    list: Node<TItem>[],
+    expandedPaths: ObjectOf<true>,
+    includeRoot?: boolean
   ): Node<TItem>[] {
-    list.push(node);
-    const children = node.childNodes();
-    if (children) {
-      for (const child of children) {
-        flattenTreeRecursively(child, list);
+    if (includeRoot) list.push(node);
+    const isExpanded =
+      !includeRoot || node.pathKey in expandedPaths;
+    if (!isExpanded) return list;
+    if (node.type === "GROUP_NODE") {
+      for (const child of node.childNodes()) {
+        flattenTreeRecursively(
+          child,
+          list,
+          expandedPaths,
+          true
+        );
       }
-    } else {
-      const itemNodes: ItemNode<TItem>[] = node
-        .items()
-        .map((item) => ({
-          type: "ITEM_NODE",
-          path: node.path,
-          item,
-        }));
-      for (const n of itemNodes) list.push(n);
     }
     return list;
   }
+}
+
+export function pathKeyFromPath(path: string[]) {
+  return path.join("//");
 }
 
 export function defaultGroupBy<TItem>(

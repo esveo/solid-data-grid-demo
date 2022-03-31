@@ -12,8 +12,8 @@ import {
   DeepMutable,
   produce,
 } from "solid-js/store";
-import { keyBy } from "../helpers/arrayHelpers";
-import { ObjectOf } from "../helpers/tsUtils";
+import { keyBy, mapValues } from "../helpers/arrayHelpers";
+import { ObjectOf, typesafeKeys } from "../helpers/tsUtils";
 import {
   FrozenColumnArea,
   SortDirection,
@@ -56,11 +56,26 @@ export class DataGridContext<TItem> {
       updateStore(produce(updater));
 
     this.derivations = this.deriveData();
+
+    this.initState();
+  }
+
+  private initState() {
+    const columns = this.derivations.columns();
+    this.updateStore((draft) => {
+      for (const c of columns) {
+        draft.columnKeysByArea[c.frozen].push(c.key);
+      }
+    });
   }
 
   private buildStore() {
     return createStore({
-      areaByColumnKey: {} as ObjectOf<FrozenColumnArea>,
+      columnKeysByArea: {
+        LEFT: [],
+        RIGHT: [],
+        UNFROZEN: [],
+      } as Record<FrozenColumnArea, string[]>,
       columnWidthByColumnKey: {} as ObjectOf<number>,
       sortBy: null as null | {
         columnKey: string;
@@ -91,21 +106,11 @@ export class DataGridContext<TItem> {
     );
 
     $.columnsByArea = createMemo(() => {
-      const columnsByArea: Record<
-        FrozenColumnArea,
-        ColumnTemplate<TItem>[]
-      > = {
-        LEFT: [],
-        RIGHT: [],
-        UNFROZEN: [],
-      };
-      for (const column of $.columns()) {
-        const area =
-          this.state.areaByColumnKey[column.key] ??
-          column.frozen;
-        columnsByArea[area].push(column);
-      }
-      return columnsByArea;
+      const byKey = $.columnsByKey();
+      return mapValues(
+        this.state.columnKeysByArea,
+        (keys) => keys.map((key) => byKey[key]!)
+      );
     });
 
     $.getColumnWidth = (columnKey: string) =>
@@ -173,6 +178,30 @@ export class DataGridContext<TItem> {
           direction,
         })
     );
+  }
+
+  moveColumn(
+    columnKey: string,
+    placeIn: FrozenColumnArea,
+    placeBefore?: string
+  ) {
+    this.updateStore((draft) => {
+      for (const areaKey of typesafeKeys(
+        draft.columnKeysByArea
+      )) {
+        draft.columnKeysByArea[areaKey] =
+          draft.columnKeysByArea[areaKey].filter(
+            (key) => key !== columnKey
+          );
+      }
+      const targetArea = draft.columnKeysByArea[placeIn];
+      let newIndex = placeBefore
+        ? targetArea.indexOf(placeBefore)
+        : -1;
+      if (newIndex === -1) newIndex = targetArea.length;
+
+      targetArea.splice(newIndex, 0, columnKey);
+    });
   }
 }
 

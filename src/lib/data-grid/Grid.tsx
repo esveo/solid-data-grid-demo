@@ -44,7 +44,12 @@ export function DataGrid<TItem>(
   return (
     <VirtualizedGrid
       rows={rows()}
-      columns={props.context.derivations.columns()}
+      columns={[
+        ...props.context.derivations.columnsByArea().LEFT,
+        ...props.context.derivations.columnsByArea()
+          .UNFROZEN,
+        ...props.context.derivations.columnsByArea().RIGHT,
+      ].filter(Boolean)}
       getColumnWidth={(c) =>
         props.context.derivations.getColumnWidth(c.key)
       }

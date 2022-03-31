@@ -36,6 +36,7 @@ function App() {
       key: "Id",
       valueFromItem: (props) => props.item.id,
       frozen: "LEFT",
+      columnWidth: 80,
     },
     {
       key: "Name",
@@ -113,12 +114,17 @@ function App() {
             Less dummy columns
           </button>
           <button
-            onClick={() =>
+            onClick={() => {
               updateStore(
                 "dummyColumnCount",
                 store.dummyColumnCount + 1
-              )
-            }
+              );
+              context.moveColumn(
+                "Dummy column " +
+                  (store.dummyColumnCount - 1),
+                "UNFROZEN"
+              );
+            }}
           >
             More dummy columns
           </button>

@@ -38,3 +38,18 @@ export function keyBy<T, TKey extends string | number>(
   });
   return result;
 }
+
+export function mapValues<TObject, TNewValue>(
+  object: TObject,
+  mapper: (
+    value: TObject[keyof TObject],
+    key: keyof TObject,
+    object: TObject
+  ) => TNewValue
+): { [Key in keyof TObject]: TNewValue } {
+  const result = {} as any;
+  for (const [key, value] of Object.entries(object)) {
+    result[key] = mapper(value, key as any, object);
+  }
+  return result;
+}

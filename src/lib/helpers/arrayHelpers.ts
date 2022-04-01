@@ -88,3 +88,16 @@ export function groupByMultiple<TItem>(
 
   return result;
 }
+
+export function joinIfArray<T>(
+  input: SingleOrArray<T>,
+  joiner: string = ", "
+) {
+  if (Array.isArray(input)) return input.join(joiner);
+  return input as T;
+}
+
+export function castArray<T>(input: SingleOrArray<T>): T[] {
+  if (Array.isArray(input)) return input;
+  return [input] as T[];
+}

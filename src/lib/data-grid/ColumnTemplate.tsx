@@ -4,7 +4,10 @@ import {
   JSX,
   mapArray,
 } from "solid-js";
+import { joinIfArray } from "../helpers/arrayHelpers";
+import { SingleOrArray } from "../helpers/tsUtils";
 import { DefaultRenderer } from "./cell-renderers/DefaultRenderer";
+import { ColumnFilterDefinition } from "./filters";
 import { DataGridContext } from "./GridContext";
 import { GroupRow, ItemRow } from "./Row";
 
@@ -20,7 +23,9 @@ export type ColumnTemplate<TItem> = {
     props: {
       item: TItem;
     } & ColumnFunctionArgs<TItem>
-  ) => number | string | boolean | null | undefined;
+  ) => SingleOrArray<
+    number | string | boolean | null | undefined
+  >;
   Item: (
     props: {
       row: ItemRow<TItem>;
@@ -30,7 +35,9 @@ export type ColumnTemplate<TItem> = {
     props: {
       row: GroupRow<TItem>;
     } & ColumnFunctionArgs<TItem>
-  ) => number | string | boolean | null | undefined;
+  ) => SingleOrArray<
+    number | string | boolean | null | undefined
+  >;
 
   /**
    * The component that will be rendered for each group cell
@@ -46,6 +53,7 @@ export type ColumnTemplate<TItem> = {
   columnWidth: number;
   resizable: boolean;
   frozen: "LEFT" | "RIGHT" | "UNFROZEN";
+  filter?: ColumnFilterDefinition<TItem, unknown>;
   groupable: boolean;
   sortBy: (
     props: {
@@ -71,7 +79,9 @@ export type ColumnTemplateDefinition<TItem> = {
     props: {
       item: TItem;
     } & ColumnFunctionArgs<TItem>
-  ) => number | string | boolean | null | undefined;
+  ) => SingleOrArray<
+    number | string | boolean | null | undefined
+  >;
 
   /**
    * The component that will be rendered for each item row
@@ -92,7 +102,9 @@ export type ColumnTemplateDefinition<TItem> = {
     props: {
       row: GroupRow<TItem>;
     } & ColumnFunctionArgs<TItem>
-  ) => number | string | boolean | null | undefined;
+  ) => SingleOrArray<
+    number | string | boolean | null | undefined
+  >;
 
   /**
    * The component that will be rendered for each group cell
@@ -111,6 +123,8 @@ export type ColumnTemplateDefinition<TItem> = {
   resizable?: boolean;
 
   frozen?: "LEFT" | "RIGHT";
+
+  filter?: ColumnFilterDefinition<TItem, any, any>;
 
   groupable?: boolean;
 
@@ -153,24 +167,9 @@ export function addDefaultsToColumnTemplateDefinition<
     columnWidth: definition.columnWidth ?? 200,
     resizable: definition.resizable ?? true,
 
-    Item:
-      definition.Item ??
-      ((props) => (
-        <DefaultRenderer
-          content={template.valueFromItem({
-            ...props,
-            item: props.row.item,
-          })}
-        ></DefaultRenderer>
-      )),
+    Item: definition.Item ?? DefaultItem,
 
-    Group:
-      definition.Group ??
-      ((props) => (
-        <DefaultRenderer
-          content={template.valueFromGroupRow?.(props)}
-        ></DefaultRenderer>
-      )),
+    Group: definition.Group ?? DefaultGroup,
     groupable: definition.groupable ?? false,
 
     frozen: definition.frozen ?? "UNFROZEN",
@@ -191,4 +190,35 @@ export function dynamicColumns<TDynamicItem, TItem>(
   ) => ColumnTemplateDefinition<TItem>
 ) {
   return createMemo(mapArray(dynamicItems, generateColumn));
+}
+
+function DefaultItem<TItem>(
+  props: {
+    row: ItemRow<TItem>;
+  } & ColumnFunctionArgs<TItem>
+) {
+  return (
+    <DefaultRenderer
+      content={joinIfArray(
+        props.template.valueFromItem({
+          ...props,
+          item: props.row.item,
+        })
+      )}
+    ></DefaultRenderer>
+  );
+}
+
+function DefaultGroup<TItem>(
+  props: {
+    row: GroupRow<TItem>;
+  } & ColumnFunctionArgs<TItem>
+) {
+  return (
+    <DefaultRenderer
+      content={joinIfArray(
+        props.template.valueFromGroupRow?.(props)
+      )}
+    ></DefaultRenderer>
+  );
 }

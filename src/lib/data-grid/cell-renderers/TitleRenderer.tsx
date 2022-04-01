@@ -1,5 +1,6 @@
 import { createMemo, Show } from "solid-js";
 import { Dynamic } from "solid-js/web";
+import { joinIfArray } from "../../helpers/arrayHelpers";
 import { defineScope } from "../../scoped-classes/scoped";
 import { ColumnFunctionArgs } from "../ColumnTemplate";
 import { dataGridCssScope } from "../cssScope";
@@ -36,7 +37,7 @@ function GroupTitleRenderer<TItem>(
     props.context().state.groupByColumnKeys[level() - 1];
 
   const matchingGroupingColumn = () =>
-    props.context().derivations.columnsByKey()[
+    props.context().derivations.columnByKey()[
       matchingGroupingColumnKey() ?? ""
     ];
 
@@ -96,10 +97,12 @@ function ItemTitleRenderer<TItem>(
       }}
     >
       <DefaultRenderer
-        content={props.template.valueFromItem({
-          ...props,
-          item: props.row.item,
-        })}
+        content={joinIfArray(
+          props.template.valueFromItem({
+            ...props,
+            item: props.row.item,
+          })
+        )}
       />
     </div>
   );

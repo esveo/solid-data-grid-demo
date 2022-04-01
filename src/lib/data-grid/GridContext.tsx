@@ -13,7 +13,11 @@ import {
   produce,
 } from "solid-js/store";
 import { keyBy, mapValues } from "../helpers/arrayHelpers";
-import { ObjectOf, typesafeKeys } from "../helpers/tsUtils";
+import {
+  isTruthy,
+  ObjectOf,
+  typesafeKeys,
+} from "../helpers/tsUtils";
 import {
   FrozenColumnArea,
   SortDirection,
@@ -92,6 +96,7 @@ export class DataGridContext<TItem> {
         UNFROZEN: [],
       } as Record<FrozenColumnArea, string[]>,
       columnWidthByColumnKey: {} as ObjectOf<number>,
+      filterStateByColumnKey: {} as ObjectOf<unknown>,
       sortBy: null as null | {
         columnKey: string;
         direction: SortDirection;
@@ -121,12 +126,12 @@ export class DataGridContext<TItem> {
       )
     );
 
-    $.columnsByKey = createMemo(() =>
+    $.columnByKey = createMemo(() =>
       keyBy($.columns(), (c) => c.key)
     );
 
     $.columnsByArea = createMemo(() => {
-      const byKey = $.columnsByKey();
+      const byKey = $.columnByKey();
       return mapValues(
         this.state.columnKeysByArea,
         (keys) => keys.map((key) => byKey[key]!)
@@ -135,7 +140,7 @@ export class DataGridContext<TItem> {
 
     $.getColumnWidth = (columnKey: string) =>
       this.state.columnWidthByColumnKey[columnKey] ??
-      this.derivations.columnsByKey()[columnKey]
+      this.derivations.columnByKey()[columnKey]
         ?.columnWidth ??
       200;
 
@@ -143,8 +148,7 @@ export class DataGridContext<TItem> {
       const sortByState = this.state.sortBy;
 
       if (!sortByState) return undefined;
-      const column =
-        $.columnsByKey()[sortByState.columnKey];
+      const column = $.columnByKey()[sortByState.columnKey];
       if (!column) return undefined;
 
       return {
@@ -153,25 +157,67 @@ export class DataGridContext<TItem> {
       };
     });
 
+    $.activeFilters = createMemo(() => {
+      const filterByKey = this.state.filterStateByColumnKey;
+      const columnByKey = $.columnByKey();
+
+      const activeFilters = Object.keys(filterByKey)
+        .map((key) => {
+          const column = columnByKey[key];
+          if (!column || !column.filter) return null;
+          const filterState = filterByKey[key];
+
+          const parseFilterState =
+            column.filter.parseFilterState ?? ((x) => x);
+          return {
+            template: column,
+            filterState,
+            parsedFilterState:
+              parseFilterState(filterState),
+          };
+        })
+        .filter(isTruthy)
+        .filter((f) => !!f.template);
+
+      return activeFilters;
+    });
+
+    $.filteredItems = createMemo(() => {
+      const activeFilters = $.activeFilters();
+      if (activeFilters.length === 0)
+        return this.input.items();
+
+      return this.input.items().filter((item) =>
+        activeFilters.every((filter) =>
+          filter.template.filter?.doesItemMatchFilter({
+            item,
+            state: filter.parsedFilterState,
+            context: () => this,
+            template: filter.template,
+          })
+        )
+      );
+    });
+
     $.sortedItems = createMemo(() => {
       const sortBy = $.sortBy();
-      if (!sortBy) return this.input.items();
+      if (!sortBy) return $.filteredItems();
 
       const getSortCriteria = sortBy.column.sortBy;
 
       const directionSign =
         sortBy.direction === "ASC" ? -1 : 1;
 
-      const sortCriteria = this.input
-        .items()
-        .map((item) => ({
+      const sortCriteria = $.filteredItems().map(
+        (item) => ({
           sortCriteria: getSortCriteria({
             item,
             context: () => this,
             template: sortBy.column,
           }),
           item,
-        }));
+        })
+      );
 
       return sortCriteria
         .sort((a, b) => {
@@ -185,7 +231,7 @@ export class DataGridContext<TItem> {
     });
 
     $.groupByColumns = createMemo(() => {
-      const columnsByKey = $.columnsByKey();
+      const columnsByKey = $.columnByKey();
       return this.state.groupByColumnKeys
         .map((key) => columnsByKey[key]!)
         .filter((c) => !!c?.groupable);
@@ -223,7 +269,7 @@ export class DataGridContext<TItem> {
     direction: SortDirection = "ASC"
   ) {
     const column =
-      this.derivations.columnsByKey()[columnKey];
+      this.derivations.columnByKey()[columnKey];
 
     this.updateStore((draft) => {
       if (!column) {
@@ -279,6 +325,17 @@ export class DataGridContext<TItem> {
         0,
         columnKey
       );
+    });
+  }
+
+  setFilter(columnKey: string, newFilterState: unknown) {
+    this.updateStore((draft) => {
+      if (newFilterState === null) {
+        delete draft.filterStateByColumnKey[columnKey];
+      } else {
+        draft.filterStateByColumnKey[columnKey] =
+          newFilterState;
+      }
     });
   }
 

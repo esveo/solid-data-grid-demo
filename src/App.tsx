@@ -7,6 +7,10 @@ import {
 import { createStore, reconcile } from "solid-js/store";
 import { TitleRenderer } from "./lib/data-grid/cell-renderers/TitleRenderer";
 import { dynamicColumns } from "./lib/data-grid/ColumnTemplate";
+import {
+  multiSelectFilter,
+  numberRangeFilter,
+} from "./lib/data-grid/filters";
 import { DataGrid } from "./lib/data-grid/Grid";
 import { createGridBuilder } from "./lib/data-grid/gridBuilder";
 import { DataGridContextProvider } from "./lib/data-grid/GridContext";
@@ -53,14 +57,14 @@ function App() {
       valueFromGroupRow: (props) =>
         props.row.items().reduce((a, b) => a + b.id, 0),
       frozen: "LEFT",
+      filter: numberRangeFilter((item) => item.id),
       columnWidth: 80,
     },
     {
       key: "Country",
       valueFromItem: (props) => props.item.country,
+      filter: multiSelectFilter(),
       groupable: true,
-      sortGroupBy: (props) =>
-        [...last(props.row.path)!].reverse().join(""),
     },
     dynamicColumns(
       () => range(0, store.dummyColumnCount),

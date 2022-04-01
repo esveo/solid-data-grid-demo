@@ -13,3 +13,9 @@ export function assertNever(x: never): never {
 export type ObjectOf<TValue> = Record<string, TValue>;
 
 export type SingleOrArray<T> = T | ReadonlyArray<T>;
+
+export function isTruthy<T>(
+  input: T
+): input is Exclude<T, false | undefined | null | 0 | ""> {
+  return !!input;
+}

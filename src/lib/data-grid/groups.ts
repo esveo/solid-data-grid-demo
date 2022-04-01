@@ -1,8 +1,13 @@
-import { Accessor, createMemo, mapArray } from "solid-js";
-import { groupByMultiple } from "../helpers/arrayHelpers";
+import { Accessor, createMemo } from "solid-js";
+import {
+  groupByMultiple,
+  last,
+} from "../helpers/arrayHelpers";
 import { ObjectOf } from "../helpers/tsUtils";
+import { SortDirection } from "./baseTypes";
 import { ColumnTemplate } from "./ColumnTemplate";
 import { DataGridContext } from "./GridContext";
+import { GroupRow } from "./Row";
 
 export type GroupNode<TItem> = {
   path: string[];
@@ -25,11 +30,19 @@ export function buildTree<TItem>(config: {
   items: Accessor<TItem[]>;
   groupByColumns: Accessor<ColumnTemplate<TItem>[]>;
   context: Accessor<DataGridContext<TItem>>;
+  sortBy: Accessor<
+    | {
+        column: ColumnTemplate<TItem>;
+        direction: SortDirection;
+      }
+    | undefined
+  >;
 }): Accessor<GroupNode<TItem>> {
   return buildTreeRecursively(
     config.items,
     config.context,
     config.groupByColumns,
+    config.sortBy,
     []
   );
 
@@ -37,11 +50,26 @@ export function buildTree<TItem>(config: {
     items: Accessor<TItem[]>,
     context: Accessor<DataGridContext<TItem>>,
     groupByColumns: Accessor<ColumnTemplate<TItem>[]>,
+    sortBy: Accessor<
+      | {
+          column: ColumnTemplate<TItem>;
+          direction: SortDirection;
+        }
+      | undefined
+    >,
     path: string[]
   ): Accessor<GroupNode<TItem>> {
     const nextGroupBy = createMemo(
       () => groupByColumns()[0]
     );
+
+    const sortByConfig = createMemo(() =>
+      determineSortBy({
+        sortByState: sortBy(),
+        columnToGroupNodesBy: nextGroupBy()!,
+      })
+    );
+
     const nextGroupByFunction = createMemo(
       () => nextGroupBy()?.valueFromItem
     );
@@ -79,24 +107,52 @@ export function buildTree<TItem>(config: {
         childNodes: createMemo(() => {
           const hasNext = hasNextGroupBy();
           if (!hasNext)
-            return mapArray(
-              items,
+            return items().map(
               (item): Node<TItem> => ({
                 type: "ITEM_NODE",
                 item,
                 path,
                 pathKey: pathKeyFromPath(path),
               })
-            )();
-          return mapArray(groupKeys, (key) => {
+            );
+          const childNodes = groupKeys()!.map((key) => {
             const items = createMemo(() => groups()![key]!);
-            return buildTreeRecursively(
+            const node = buildTreeRecursively(
               items,
               context,
               remainingGroupBys,
+              sortBy,
               [...path, key]
             )();
-          })();
+
+            return node;
+          });
+
+          const { sortDirectionFactor, sortingFunction } =
+            sortByConfig();
+
+          const sortedChildNodes = childNodes
+            .map((node) => ({
+              node,
+              sortingCriteria: sortingFunction?.({
+                context,
+                template: nextGroupBy()!,
+                row: {
+                  ...node,
+                  type: "GROUP_ROW",
+                },
+              }),
+            }))
+            .sort((a, b) => {
+              if (a.sortingCriteria < b.sortingCriteria)
+                return -1 * sortDirectionFactor;
+              if (b.sortingCriteria < a.sortingCriteria)
+                return 1 * sortDirectionFactor;
+              return 0;
+            })
+            .map((x) => x.node);
+
+          return sortedChildNodes;
         }),
       };
     });
@@ -146,4 +202,49 @@ export function flattenTree<TItem>(
 
 export function pathKeyFromPath(path: string[]) {
   return path.join("//");
+}
+
+function determineSortBy<TItem>(config: {
+  sortByState:
+    | {
+        column: ColumnTemplate<TItem>;
+        direction: SortDirection;
+      }
+    | undefined;
+  columnToGroupNodesBy: ColumnTemplate<TItem>;
+}) {
+  const valueFromGroupRowFromCurrentSort =
+    config.sortByState?.column.valueFromGroupRow;
+
+  const sortGroupByOfCurrentSort =
+    config.columnToGroupNodesBy ===
+      config.sortByState?.column ||
+    valueFromGroupRowFromCurrentSort
+      ? config.sortByState?.column.sortGroupBy
+      : undefined;
+
+  const sortGroupByOfCurrentGroup =
+    config.columnToGroupNodesBy?.sortGroupBy;
+
+  const sortingFunction =
+    sortGroupByOfCurrentSort ??
+    sortGroupByOfCurrentGroup ??
+    defaultSortGroupBy;
+
+  const sortDirectionFactor = !sortGroupByOfCurrentSort
+    ? 1
+    : config.sortByState?.direction === "DESC"
+    ? -1
+    : 1;
+
+  return {
+    sortingFunction,
+    sortDirectionFactor,
+  };
+}
+
+function defaultSortGroupBy(props: {
+  row: GroupRow<unknown>;
+}) {
+  return last(props.row.path) ?? "";
 }

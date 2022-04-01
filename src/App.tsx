@@ -10,7 +10,7 @@ import { dynamicColumns } from "./lib/data-grid/ColumnTemplate";
 import { DataGrid } from "./lib/data-grid/Grid";
 import { createGridBuilder } from "./lib/data-grid/gridBuilder";
 import { DataGridContextProvider } from "./lib/data-grid/GridContext";
-import { range } from "./lib/helpers/arrayHelpers";
+import { last, range } from "./lib/helpers/arrayHelpers";
 import { AutoSizer } from "./lib/measure-dom/AutoSizer";
 import {
   loadMockPersons,
@@ -40,6 +40,8 @@ function App() {
     {
       key: "Title",
       valueFromItem: (props) => props.item.name,
+      valueFromGroupRow: (props) =>
+        last(props.row.path) ?? "All",
       Item: TitleRenderer,
       Group: TitleRenderer,
       frozen: "LEFT",
@@ -48,6 +50,8 @@ function App() {
     {
       key: "Id",
       valueFromItem: (props) => props.item.id,
+      valueFromGroupRow: (props) =>
+        props.row.items().reduce((a, b) => a + b.id, 0),
       frozen: "LEFT",
       columnWidth: 80,
     },
@@ -55,6 +59,8 @@ function App() {
       key: "Country",
       valueFromItem: (props) => props.item.country,
       groupable: true,
+      sortGroupBy: (props) =>
+        [...last(props.row.path)!].reverse().join(""),
     },
     dynamicColumns(
       () => range(0, store.dummyColumnCount),
@@ -93,7 +99,7 @@ function App() {
     gridKey: "person-grid",
     items: () => store.persons ?? [],
     initialState: {
-      groupByColumnKeys: [],
+      groupByColumnKeys: ["Country", "Age group"],
     },
   });
 

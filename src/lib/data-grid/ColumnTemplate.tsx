@@ -52,6 +52,11 @@ export type ColumnTemplate<TItem> = {
       item: TItem;
     } & ColumnFunctionArgs<TItem>
   ) => any;
+  sortGroupBy?: (
+    props: {
+      row: GroupRow<TItem>;
+    } & ColumnFunctionArgs<TItem>
+  ) => any;
   sortable: boolean;
 };
 
@@ -111,11 +116,21 @@ export type ColumnTemplateDefinition<TItem> = {
 
   /**
    * Retrieve the sorting criteria from an item
-   * Defaults to `getValueFromItem`
+   * Defaults to `valueFromItem`
    */
   sortBy?: (
     props: {
       item: TItem;
+    } & ColumnFunctionArgs<TItem>
+  ) => any;
+
+  /**
+   * Retrieve sorting criteria from group row
+   * Defaults to `valueFromGroupRow`
+   */
+  sortGroupBy?: (
+    props: {
+      row: GroupRow<TItem>;
     } & ColumnFunctionArgs<TItem>
   ) => any;
 
@@ -162,6 +177,9 @@ export function addDefaultsToColumnTemplateDefinition<
 
     sortBy: definition.sortBy ?? definition.valueFromItem,
     sortable: definition.sortable ?? true,
+    sortGroupBy:
+      definition.sortGroupBy ??
+      definition.valueFromGroupRow,
   };
   return template;
 }

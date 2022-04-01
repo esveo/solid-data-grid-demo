@@ -139,14 +139,25 @@ export class DataGridContext<TItem> {
         ?.columnWidth ??
       200;
 
+    $.sortBy = createMemo(() => {
+      const sortByState = this.state.sortBy;
+
+      if (!sortByState) return undefined;
+      const column =
+        $.columnsByKey()[sortByState.columnKey];
+      if (!column) return undefined;
+
+      return {
+        column,
+        direction: sortByState.direction,
+      };
+    });
+
     $.sortedItems = createMemo(() => {
-      const sortBy = this.state.sortBy;
+      const sortBy = $.sortBy();
       if (!sortBy) return this.input.items();
 
-      const column = $.columnsByKey()[sortBy.columnKey];
-      if (!column) return this.input.items();
-
-      const getSortCriteria = column.sortBy;
+      const getSortCriteria = sortBy.column.sortBy;
 
       const directionSign =
         sortBy.direction === "ASC" ? -1 : 1;
@@ -157,7 +168,7 @@ export class DataGridContext<TItem> {
           sortCriteria: getSortCriteria({
             item,
             context: () => this,
-            template: column,
+            template: sortBy.column,
           }),
           item,
         }));
@@ -183,6 +194,7 @@ export class DataGridContext<TItem> {
     $.itemTree = buildTree({
       context: () => this,
       groupByColumns: $.groupByColumns,
+      sortBy: $.sortBy,
       items: $.sortedItems,
     });
 
@@ -208,13 +220,22 @@ export class DataGridContext<TItem> {
 
   sortByColumn(
     columnKey: string,
-    direction: SortDirection
+    direction: SortDirection = "ASC"
   ) {
     const column =
       this.derivations.columnsByKey()[columnKey];
-    if (!column) return;
+
     this.updateStore((draft) => {
-      draft.sortBy = { columnKey, direction };
+      if (!column) {
+        draft.sortBy = null;
+        return;
+      }
+
+      if (!draft.sortBy) {
+        draft.sortBy = { columnKey, direction };
+      }
+      draft.sortBy.columnKey = columnKey;
+      draft.sortBy.direction = direction;
     });
   }
 

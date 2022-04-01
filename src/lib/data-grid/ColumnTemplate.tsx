@@ -181,6 +181,15 @@ export function addDefaultsToColumnTemplateDefinition<
   definition: ColumnTemplateDefinition<TItem>,
   context: Accessor<DataGridContext<TItem>>
 ): ColumnTemplate<TItem> {
+  const valueFromGroup =
+    definition.valueFromGroup ??
+    (definition.aggregateItems
+      ? (props) =>
+          props.node.aggregationsByColumnKey()[
+            definition.key
+          ]!()
+      : undefined);
+
   const template: ColumnTemplate<TItem> = {
     ...definition,
     title: definition.title ?? definition.key,
@@ -197,16 +206,8 @@ export function addDefaultsToColumnTemplateDefinition<
 
     sortBy: definition.sortBy ?? definition.valueFromItem,
     sortable: definition.sortable ?? true,
-    sortGroupBy:
-      definition.sortGroupBy ?? definition.valueFromGroup,
-    valueFromGroup:
-      definition.valueFromGroup ??
-      (definition.aggregateItems
-        ? (props) =>
-            props.node.aggregationsByColumnKey()[
-              definition.key
-            ]!()
-        : undefined),
+    sortGroupBy: definition.sortGroupBy ?? valueFromGroup,
+    valueFromGroup: valueFromGroup,
   };
   return template;
 }

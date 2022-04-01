@@ -5,7 +5,7 @@ import {
   createMemo,
 } from "solid-js";
 import { createStore, reconcile } from "solid-js/store";
-import { TitleRenderer } from "./lib/data-grid/cell-renderers/TitleRenderer";
+import { buildTitleDefaults } from "./lib/data-grid/cell-renderers/TitleRenderer";
 import { dynamicColumns } from "./lib/data-grid/ColumnTemplate";
 import {
   multiSelectFilter,
@@ -14,7 +14,7 @@ import {
 import { DataGrid } from "./lib/data-grid/Grid";
 import { createGridBuilder } from "./lib/data-grid/gridBuilder";
 import { DataGridContextProvider } from "./lib/data-grid/GridContext";
-import { last, range } from "./lib/helpers/arrayHelpers";
+import { meanBy, range } from "./lib/helpers/arrayHelpers";
 import { AutoSizer } from "./lib/measure-dom/AutoSizer";
 import {
   loadMockPersons,
@@ -28,37 +28,27 @@ function App() {
 
   const [store, updateStore] = createStore({
     persons: null as Person[] | null,
-    dummyColumnCount: 0,
+    dummyColumnCount: 10,
   });
 
   createEffect(() => {
     loadMockPersons(personCount).then((persons) => {
-      Object.assign(window, { persons });
       updateStore(reconcile({ ...store, persons }));
     });
   });
 
   const personGrid = createGridBuilder<Person>();
-
   const columns = personGrid.buildColumns([
     {
+      ...buildTitleDefaults((item) => item.name),
       key: "Title",
-      valueFromItem: (props) => props.item.name,
-      valueFromGroupRow: (props) =>
-        last(props.row.path) ?? "All",
-      Item: TitleRenderer,
-      Group: TitleRenderer,
-      frozen: "LEFT",
-      columnWidth: 300,
     },
     {
       key: "Id",
       valueFromItem: (props) => props.item.id,
-      valueFromGroupRow: (props) =>
-        props.row.items().reduce((a, b) => a + b.id, 0),
-      frozen: "LEFT",
+      aggregateItems: (items) => meanBy(items, (i) => i.id),
       filter: numberRangeFilter((item) => item.id),
-      columnWidth: 80,
+      columnWidth: 100,
     },
     {
       key: "Country",
@@ -68,10 +58,12 @@ function App() {
     },
     dynamicColumns(
       () => range(0, store.dummyColumnCount),
-      (i) => ({
-        key: "Dummy column " + i,
-        valueFromItem: (props) => props.template.key,
-      })
+      (i) => {
+        return {
+          key: "Dummy column " + i,
+          valueFromItem: (props) => props.template.key,
+        };
+      }
     ),
     {
       key: "Date of Birth",
@@ -105,6 +97,7 @@ function App() {
     initialState: {
       groupByColumnKeys: ["Country", "Age group"],
     },
+    showAllRow: () => false,
   });
 
   function createLoggingMemo<T>(
@@ -137,9 +130,7 @@ function App() {
             onClick={async () => {
               loadMockPersons(personCount).then(
                 (persons) => {
-                  updateStore(
-                    reconcile({ ...store, persons })
-                  );
+                  updateStore({ ...store, persons });
                 }
               );
             }}

@@ -30,9 +30,9 @@ import {
 import {
   buildTree,
   flattenTree,
+  GroupNode,
   pathKeyFromPath,
 } from "./groups";
-import { GroupRow } from "./Row";
 
 export type DataGridContextInput<TItem> = {
   gridKey: string;
@@ -138,6 +138,10 @@ export class DataGridContext<TItem> {
       );
     });
 
+    $.columnsWidthAggregations = createMemo(() =>
+      $.columns().filter((c) => c.aggregateItems)
+    );
+
     $.getColumnWidth = (columnKey: string) =>
       this.state.columnWidthByColumnKey[columnKey] ??
       this.derivations.columnByKey()[columnKey]
@@ -242,6 +246,7 @@ export class DataGridContext<TItem> {
       groupByColumns: $.groupByColumns,
       sortBy: $.sortBy,
       items: $.sortedItems,
+      columnsWithAggregations: $.columnsWidthAggregations,
     });
 
     $.flatTree = flattenTree(
@@ -348,8 +353,8 @@ export class DataGridContext<TItem> {
     });
   }
 
-  toggleRowExpansion(row: GroupRow<TItem>) {
-    const pathKey = pathKeyFromPath(row.path);
+  toggleGroupExpansion(node: GroupNode<TItem>) {
+    const pathKey = pathKeyFromPath(node.path);
     this.updateStore((draft) => {
       if (pathKey in draft.expandedPaths)
         delete draft.expandedPaths[pathKey];
@@ -357,8 +362,8 @@ export class DataGridContext<TItem> {
     });
   }
 
-  isRowExpanded(row: GroupRow<TItem>) {
-    const pathKey = pathKeyFromPath(row.path);
+  isGroupExpanded(node: GroupNode<TItem>) {
+    const pathKey = pathKeyFromPath(node.path);
     return pathKey in this.state.expandedPaths;
   }
 }

@@ -9,7 +9,7 @@ import { SingleOrArray } from "../helpers/tsUtils";
 import { DefaultRenderer } from "./cell-renderers/DefaultRenderer";
 import { ColumnFilterDefinition } from "./filters";
 import { DataGridContext } from "./GridContext";
-import { GroupRow, ItemRow } from "./Row";
+import { GroupNode, ItemNode } from "./groups";
 
 export type ColumnFunctionArgs<TItem> = {
   template: ColumnTemplate<TItem>;
@@ -28,12 +28,17 @@ export type ColumnTemplate<TItem> = {
   >;
   Item: (
     props: {
-      row: ItemRow<TItem>;
+      node: ItemNode<TItem>;
     } & ColumnFunctionArgs<TItem>
   ) => JSX.Element;
-  valueFromGroupRow?: (
+  aggregateItems?: (
+    items: TItem[]
+  ) => SingleOrArray<
+    number | string | boolean | null | undefined
+  >;
+  valueFromGroup?: (
     props: {
-      row: GroupRow<TItem>;
+      node: GroupNode<TItem>;
     } & ColumnFunctionArgs<TItem>
   ) => SingleOrArray<
     number | string | boolean | null | undefined
@@ -43,11 +48,11 @@ export type ColumnTemplate<TItem> = {
    * The component that will be rendered for each group cell
    * of that column.
    *
-   * Defaults to `valueFromGroupRow`
+   * Defaults to `valueFromGroup`
    */
   Group: (
     props: {
-      row: GroupRow<TItem>;
+      node: GroupNode<TItem>;
     } & ColumnFunctionArgs<TItem>
   ) => JSX.Element;
   columnWidth: number;
@@ -62,7 +67,7 @@ export type ColumnTemplate<TItem> = {
   ) => any;
   sortGroupBy?: (
     props: {
-      row: GroupRow<TItem>;
+      node: GroupNode<TItem>;
     } & ColumnFunctionArgs<TItem>
   ) => any;
   sortable: boolean;
@@ -91,16 +96,32 @@ export type ColumnTemplateDefinition<TItem> = {
    */
   Item?: (
     props: {
-      row: ItemRow<TItem>;
+      node: ItemNode<TItem>;
     } & ColumnFunctionArgs<TItem>
   ) => JSX.Element;
 
   /**
-   * Return a displayable primitive value from the group row
+   * Calculate aggregations for all items of a group row for this column.
+   *
+   * Will only be called when building the tree of groups but will be called
+   * for all groups, no matter if displayed or not.
    */
-  valueFromGroupRow?: (
+  aggregateItems?: (
+    items: TItem[]
+  ) => SingleOrArray<
+    number | string | boolean | null | undefined
+  >;
+
+  /**
+   * Return a displayable primitive value from the group row
+   * defaults to returning the aggregation value (if present)
+   *
+   * Will be called for sorting groups and for rendering group
+   * cells.
+   */
+  valueFromGroup?: (
     props: {
-      row: GroupRow<TItem>;
+      node: GroupNode<TItem>;
     } & ColumnFunctionArgs<TItem>
   ) => SingleOrArray<
     number | string | boolean | null | undefined
@@ -110,11 +131,11 @@ export type ColumnTemplateDefinition<TItem> = {
    * The component that will be rendered for each group cell
    * of that column.
    *
-   * Defaults to `valueFromGroupRow`
+   * Defaults to `valueFromGroup`
    */
   Group?: (
     props: {
-      row: GroupRow<TItem>;
+      node: GroupNode<TItem>;
     } & ColumnFunctionArgs<TItem>
   ) => JSX.Element;
 
@@ -140,11 +161,11 @@ export type ColumnTemplateDefinition<TItem> = {
 
   /**
    * Retrieve sorting criteria from group row
-   * Defaults to `valueFromGroupRow`
+   * Defaults to `valueFromGroup`
    */
   sortGroupBy?: (
     props: {
-      row: GroupRow<TItem>;
+      node: GroupNode<TItem>;
     } & ColumnFunctionArgs<TItem>
   ) => any;
 
@@ -177,8 +198,15 @@ export function addDefaultsToColumnTemplateDefinition<
     sortBy: definition.sortBy ?? definition.valueFromItem,
     sortable: definition.sortable ?? true,
     sortGroupBy:
-      definition.sortGroupBy ??
-      definition.valueFromGroupRow,
+      definition.sortGroupBy ?? definition.valueFromGroup,
+    valueFromGroup:
+      definition.valueFromGroup ??
+      (definition.aggregateItems
+        ? (props) =>
+            props.node.aggregationsByColumnKey()[
+              definition.key
+            ]!()
+        : undefined),
   };
   return template;
 }
@@ -194,7 +222,7 @@ export function dynamicColumns<TDynamicItem, TItem>(
 
 function DefaultItem<TItem>(
   props: {
-    row: ItemRow<TItem>;
+    node: ItemNode<TItem>;
   } & ColumnFunctionArgs<TItem>
 ) {
   return (
@@ -202,7 +230,7 @@ function DefaultItem<TItem>(
       content={joinIfArray(
         props.template.valueFromItem({
           ...props,
-          item: props.row.item,
+          item: props.node.item,
         })
       )}
     ></DefaultRenderer>
@@ -211,13 +239,13 @@ function DefaultItem<TItem>(
 
 function DefaultGroup<TItem>(
   props: {
-    row: GroupRow<TItem>;
+    node: GroupNode<TItem>;
   } & ColumnFunctionArgs<TItem>
 ) {
   return (
     <DefaultRenderer
       content={joinIfArray(
-        props.template.valueFromGroupRow?.(props)
+        props.template.valueFromGroup?.(props)
       )}
     ></DefaultRenderer>
   );

@@ -1,13 +1,9 @@
-import {
-  createMemo,
-  createSignal,
-  mapArray,
-} from "solid-js";
+import { createMemo, createSignal } from "solid-js";
 import { assertNever } from "../helpers/tsUtils";
 import { VirtualizedGrid } from "../virtualized-grid/VirtualizedGrid";
 import { DataGridCell } from "./Cell";
 import { useDataGridContext } from "./GridContext";
-import { DataRow, HeaderRow } from "./Row";
+import { HeaderRow, Row } from "./Row";
 
 export type DataGridProps = {
   width: number;
@@ -23,32 +19,11 @@ export function DataGrid(props: DataGridProps) {
     type: "HEADER_ROW",
   };
 
-  const dataRows = createMemo(
-    mapArray(
-      context.derivations.flatTree,
-      (node): DataRow<unknown> => {
-        switch (node.type) {
-          case "GROUP_NODE":
-            return {
-              type: "GROUP_ROW",
-              items: node.items,
-              path: node.path,
-            };
-          case "ITEM_NODE":
-            return {
-              type: "ITEM_ROW",
-              item: node.item,
-              path: node.path,
-            };
-          default:
-            assertNever(node);
-        }
-      }
-    )
-  );
-
   const rows = createMemo(() => {
-    const rows = [headerRow, ...dataRows()];
+    const rows: Row<unknown>[] = [
+      headerRow,
+      ...context.derivations.flatTree(),
+    ];
 
     return rows;
   });
@@ -70,9 +45,9 @@ export function DataGrid(props: DataGridProps) {
         switch (row.type) {
           case "HEADER_ROW":
             return context.input.headerHeight ?? 50;
-          case "ITEM_ROW":
+          case "ITEM_NODE":
             return context.input.itemRowHeight ?? 30;
-          case "GROUP_ROW":
+          case "GROUP_NODE":
             return context.input.groupRowHeight ?? 30;
           default:
             assertNever(row);

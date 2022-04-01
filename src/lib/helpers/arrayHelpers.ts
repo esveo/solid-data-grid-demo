@@ -101,3 +101,12 @@ export function castArray<T>(input: SingleOrArray<T>): T[] {
   if (Array.isArray(input)) return input;
   return [input] as T[];
 }
+
+export function meanBy<T>(
+  items: ReadonlyArray<T>,
+  callback: (item: T) => number
+): number {
+  let sum = 0;
+  for (const item of items) sum += callback(item);
+  return sum / items.length;
+}

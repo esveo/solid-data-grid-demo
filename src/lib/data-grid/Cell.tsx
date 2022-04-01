@@ -7,7 +7,8 @@ import "./Cell.scss";
 import { ColumnTemplate } from "./ColumnTemplate";
 import { dataGridCssScope } from "./cssScope";
 import { useDataGridContext } from "./GridContext";
-import { GroupRow, HeaderRow, ItemRow, Row } from "./Row";
+import { GroupNode, ItemNode } from "./groups";
+import { HeaderRow, Row } from "./Row";
 
 export function DataGridCell<TItem>(
   props: VirtualizedGridCellProps<
@@ -19,9 +20,9 @@ export function DataGridCell<TItem>(
   switch (props.row.type) {
     case "HEADER_ROW":
       return <HeaderCell {...(props as any)} />;
-    case "ITEM_ROW":
+    case "ITEM_NODE":
       return <ItemCell {...(props as any)} />;
-    case "GROUP_ROW":
+    case "GROUP_NODE":
       return <GroupCell {...(props as any)} />;
     default:
       assertNever(props.row);
@@ -109,7 +110,7 @@ function HeaderCell<TItem>(
 
 function ItemCell<TItem>(
   props: VirtualizedGridCellProps<
-    ItemRow<TItem>,
+    ItemNode<TItem>,
     ColumnTemplate<TItem>
   >
 ) {
@@ -121,7 +122,7 @@ function ItemCell<TItem>(
     >
       <Dynamic
         component={props.column.Item}
-        row={props.row}
+        node={props.row}
         template={props.column}
         context={() => context}
       />
@@ -131,7 +132,7 @@ function ItemCell<TItem>(
 
 function GroupCell<TItem>(
   props: VirtualizedGridCellProps<
-    GroupRow<TItem>,
+    GroupNode<TItem>,
     ColumnTemplate<TItem>
   >
 ) {
@@ -143,7 +144,7 @@ function GroupCell<TItem>(
     >
       <Dynamic
         component={props.column.Group}
-        row={props.row}
+        node={props.row}
         template={props.column}
         context={() => context}
       />

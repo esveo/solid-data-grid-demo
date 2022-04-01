@@ -1,35 +1,29 @@
-import { createMemo, Show } from "solid-js";
+import { createMemo, JSXElement, Show } from "solid-js";
 import { Dynamic } from "solid-js/web";
-import { joinIfArray } from "../../helpers/arrayHelpers";
+import {
+  joinIfArray,
+  last,
+} from "../../helpers/arrayHelpers";
+import { SingleOrArray } from "../../helpers/tsUtils";
 import { defineScope } from "../../scoped-classes/scoped";
-import { ColumnFunctionArgs } from "../ColumnTemplate";
+import {
+  ColumnFunctionArgs,
+  ColumnTemplateDefinition,
+} from "../ColumnTemplate";
 import { dataGridCssScope } from "../cssScope";
-import { DataRow, GroupRow, ItemRow } from "../Row";
+import { GroupNode, ItemNode } from "../groups";
 import { DefaultRenderer } from "./DefaultRenderer";
 
-export function TitleRenderer<TItem>(
-  props: { row: DataRow<TItem> } & ColumnFunctionArgs<TItem>
-) {
-  return (
-    <Show
-      when={props.row.type === "GROUP_ROW"}
-      fallback={<ItemTitleRenderer {...(props as any)} />}
-    >
-      <GroupTitleRenderer {...(props as any)} />
-    </Show>
-  );
-}
-
-function GroupTitleRenderer<TItem>(
+export function GroupTitleRenderer<TItem>(
   props: {
-    row: GroupRow<TItem>;
+    node: GroupNode<TItem>;
   } & ColumnFunctionArgs<TItem>
 ) {
   const showRootIndentationOffset = () =>
-    props.context().input.showAllRow ? 0 : -1;
+    props.context().input.showAllRow?.() ? 0 : -1;
 
   const level = createMemo(() => {
-    const pathLength = props.row.path.length;
+    const pathLength = props.node.path.length;
     return pathLength;
   });
 
@@ -42,7 +36,7 @@ function GroupTitleRenderer<TItem>(
     ];
 
   const isExpanded = () =>
-    props.context().isRowExpanded(props.row);
+    props.context().isGroupExpanded(props.node);
 
   return (
     <div
@@ -54,11 +48,12 @@ function GroupTitleRenderer<TItem>(
       <button
         class={css("__title-renderer-expansion-toggle")}
         onClick={() =>
-          props.context().toggleRowExpansion(props.row)
+          props.context().toggleGroupExpansion(props.node)
         }
       >
         {isExpanded() ? "V" : ">"}
       </button>
+
       <Show
         when={matchingGroupingColumn()}
         fallback={<DefaultRenderer content="All" />}
@@ -66,26 +61,31 @@ function GroupTitleRenderer<TItem>(
         <Dynamic
           component={matchingGroupingColumn()!.Item}
           context={props.context}
-          row={{
-            item: props.row.items()[0]!,
+          node={{
+            item: props.node.items()[0]!,
             path: [],
-            type: "ITEM_ROW",
+            pathKey: "",
+            type: "ITEM_NODE",
           }}
           template={matchingGroupingColumn()!}
         />
       </Show>
+      <span> ({props.node.items().length})</span>
     </div>
   );
 }
 
-function ItemTitleRenderer<TItem>(
-  props: { row: ItemRow<TItem> } & ColumnFunctionArgs<TItem>
+export function ItemTitleRenderer<TItem>(
+  props: {
+    node: ItemNode<TItem>;
+    content?: JSXElement;
+  } & ColumnFunctionArgs<TItem>
 ) {
   const showRootIndentationOffset = () =>
-    props.context().input.showAllRow ? 0 : -1;
+    props.context().input.showAllRow?.() ? 0 : -1;
 
   const level = createMemo(() => {
-    const pathLength = props.row.path.length;
+    const pathLength = props.node.path.length;
     return pathLength + 1 + (pathLength > 0 ? 2 : 0);
   });
 
@@ -97,15 +97,37 @@ function ItemTitleRenderer<TItem>(
       }}
     >
       <DefaultRenderer
-        content={joinIfArray(
-          props.template.valueFromItem({
-            ...props,
-            item: props.row.item,
-          })
-        )}
+        content={
+          props.content ??
+          joinIfArray(
+            props.template.valueFromItem({
+              ...props,
+              item: props.node.item,
+            })
+          )
+        }
       />
     </div>
   );
 }
 
 const css = defineScope(dataGridCssScope);
+
+export function buildTitleDefaults<TItem>(
+  titleFromItem: (
+    item: TItem
+  ) => SingleOrArray<
+    string | number | boolean | null | undefined
+  >
+): ColumnTemplateDefinition<TItem> {
+  return {
+    key: "Title",
+    valueFromItem: (props) => titleFromItem(props.item),
+    valueFromGroup: (props) =>
+      last(props.node.path) ?? "All",
+    Item: ItemTitleRenderer,
+    Group: GroupTitleRenderer,
+    frozen: "LEFT",
+    columnWidth: 300,
+  };
+}

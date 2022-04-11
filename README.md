@@ -1,5 +1,7 @@
 # Solid Data Grid
 
+Check out the [demo](https://esveo.github.io/solid-data-grid-demo/).
+
 This repo contains the source code for the demo of a data grid component. It can be divided into 3 main modules:
 
 1. Virtualized Grid: Low level library to render data to a 2d grid with virtualized rows and columns and pinned rows and columns.

@@ -1,9 +1,5 @@
 import { seed } from "@ngneat/falso";
-import {
-  Accessor,
-  createEffect,
-  createMemo,
-} from "solid-js";
+import { createEffect } from "solid-js";
 import { createStore, reconcile } from "solid-js/store";
 import { buildTitleDefaults } from "./lib/data-grid/cell-renderers/TitleRenderer";
 import { dynamicColumns } from "./lib/data-grid/ColumnTemplate";
@@ -99,18 +95,6 @@ function App() {
     },
     showAllRow: () => false,
   });
-
-  function createLoggingMemo<T>(
-    log: string,
-    value: Accessor<T>
-  ) {
-    const memo = createMemo(value);
-    createEffect(() => {
-      const newValue = memo();
-      console.log(log, newValue);
-    });
-    return memo;
-  }
 
   Object.assign(window, { context });
 

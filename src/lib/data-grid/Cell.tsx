@@ -16,7 +16,6 @@ export function DataGridCell<TItem>(
     ColumnTemplate<TItem>
   >
 ) {
-  console.log("cell rebuilt");
   switch (props.row.type) {
     case "HEADER_ROW":
       return <HeaderCell {...(props as any)} />;

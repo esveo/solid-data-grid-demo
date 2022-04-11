@@ -8,6 +8,8 @@ This repo contains the source code for the demo of a data grid component. It can
 2. DataGrid: The library that handles all logic regarding sorting, filters, groups etc. Uses the virtualized grid internally for rendering.
 3. The App: This is the entry point and serves as a demonstration for the different features of the grid.
 
+This source code was entirely written live on stream. This process can be watched here: https://www.twitch.tv/collections/WHMS_azh5Bbtxw
+
 ## What is currently missing from this?
 
 1. Proper UIs for changing the grid state. Think of an editor to reorder the columns or to drag and drop columns to build the grouping levels. The logic is all done within the gridContext, but the UIs are not there yet.

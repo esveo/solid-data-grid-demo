@@ -1,13 +1,26 @@
 {
-  "name": "vite-template-solid",
-  "version": "0.0.0",
-  "description": "",
+  "name": "solid-data-grid-demo",
+  "version": "1.0.0",
+  "description": "Demonstration and implementation of a solid data grid component",
+  "info": "The original goal was to build a complete library, but sadly, the time ran out so we had to settle for a demonstration and the source code.",
+  "homepage": "https://esveo.github.io/solid-data-grid-demo/",
+  "contributors": [
+    {
+      "name": "Andreas Roth",
+      "email": "ander.roth@esveo.com",
+      "url": "https://www.esveo.com/en/blog/"
+    }
+  ],
   "scripts": {
     "start": "vite",
     "dev": "vite",
     "build": "vite build",
     "serve": "vite preview"
   },
+  "keywords": [
+    "solidhack",
+    "best_app"
+  ],
   "license": "MIT",
   "devDependencies": {
     "@babel/core": "7.17.8",

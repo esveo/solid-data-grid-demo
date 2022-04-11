@@ -1,12 +1,17 @@
 import { seed } from "@ngneat/falso";
-import { createEffect } from "solid-js";
+import {
+  batch,
+  createEffect,
+  createMemo,
+  For,
+  untrack,
+} from "solid-js";
 import { createStore, reconcile } from "solid-js/store";
+import { SortDirection } from "./lib/data-grid/baseTypes";
+import { NumberRenderer } from "./lib/data-grid/cell-renderers/NumberRenderer";
 import { buildTitleDefaults } from "./lib/data-grid/cell-renderers/TitleRenderer";
 import { dynamicColumns } from "./lib/data-grid/ColumnTemplate";
-import {
-  multiSelectFilter,
-  numberRangeFilter,
-} from "./lib/data-grid/filters";
+import { multiSelectFilter } from "./lib/data-grid/filters";
 import { DataGrid } from "./lib/data-grid/Grid";
 import { createGridBuilder } from "./lib/data-grid/gridBuilder";
 import { DataGridContextProvider } from "./lib/data-grid/GridContext";
@@ -20,17 +25,117 @@ import {
 seed("THIS IS MY SEED!");
 
 function App() {
-  const personCount = 10_000;
+  const dataOptions = [
+    {
+      rows: 100,
+      columns: 10,
+    },
+    {
+      rows: 1000,
+      columns: 100,
+    },
+    {
+      rows: 10000,
+      columns: 100,
+    },
+    {
+      rows: 100_000,
+      columns: 100,
+    },
+  ];
+
+  const pinningOptions = [1, 2, 3];
+  const groupingOptions = [
+    [],
+    ["Country"],
+    ["Country", "Age group"],
+  ];
+  const sortBy = [
+    { key: "Title", direction: "ASC" as SortDirection },
+    { key: "Title", direction: "DESC" as SortDirection },
+    { key: "Income", direction: "ASC" as SortDirection },
+    { key: "Income", direction: "DESC" as SortDirection },
+  ];
 
   const [store, updateStore] = createStore({
     persons: null as Person[] | null,
-    dummyColumnCount: 10,
+    dataOption: dataOptions[0]!,
+    pinnedColumns: 1,
+    countryFilter: null as string | null,
+    groupBy: groupingOptions[0]!,
+    sortBy: sortBy[0]!,
+  });
+
+  const countries = createMemo(() =>
+    [
+      ...new Set(store.persons?.map((p) => p.country)),
+    ].sort()
+  );
+
+  createEffect(() => {
+    loadMockPersons(store.dataOption.rows).then(
+      (persons) => {
+        updateStore(reconcile({ ...store, persons }));
+      }
+    );
   });
 
   createEffect(() => {
-    loadMockPersons(personCount).then((persons) => {
-      updateStore(reconcile({ ...store, persons }));
+    const newColumnCount = store.dataOption.columns;
+
+    batch(() => {
+      for (let i = 0; i < newColumnCount; i++) {
+        context.moveColumn("Dummy column " + i, "UNFROZEN");
+      }
     });
+  });
+
+  createEffect(() => {
+    const newPin = store.pinnedColumns;
+    batch(() => {
+      const pinLeft = context.derivations
+        .columns()
+        .slice(0, newPin);
+      const middle = context.derivations
+        .columns()
+        .slice(newPin, -newPin);
+      const pinRight = context.derivations
+        .columns()
+        .slice(-newPin);
+      for (const c of pinLeft)
+        context.moveColumn(c.key, "LEFT");
+      for (const c of middle)
+        context.moveColumn(c.key, "UNFROZEN");
+      for (const c of pinRight)
+        context.moveColumn(c.key, "RIGHT");
+    });
+  });
+
+  createEffect(() => {
+    const newGroups = store.groupBy;
+    const oldGroups = untrack(
+      context.derivations.groupByColumns
+    );
+    batch(() => {
+      for (const c of oldGroups) {
+        context.removeFromGroups(c.key);
+      }
+      for (const c of newGroups) context.groupBy(c);
+    });
+  });
+
+  createEffect(() => {
+    context.sortByColumn(
+      store.sortBy.key,
+      store.sortBy.direction
+    );
+  });
+
+  createEffect(() => {
+    context.setFilter(
+      "Country",
+      store.countryFilter ? [store.countryFilter] : null
+    );
   });
 
   const personGrid = createGridBuilder<Person>();
@@ -40,11 +145,27 @@ function App() {
       key: "Title",
     },
     {
-      key: "Id",
-      valueFromItem: (props) => props.item.id,
-      aggregateItems: (items) => meanBy(items, (i) => i.id),
-      filter: numberRangeFilter((item) => item.id),
-      columnWidth: 100,
+      key: "Income",
+      valueFromItem: (props) => props.item.income,
+      Item: (props) => (
+        <NumberRenderer
+          content={props.node.item.income}
+          decimals={0}
+        />
+      ),
+      Group: (props) => (
+        <NumberRenderer
+          content={
+            props.node.aggregationsByColumnKey()
+              .Income!() as any as number
+          }
+          decimals={0}
+          suffix={"$"}
+        />
+      ),
+      aggregateItems: (items) =>
+        meanBy(items, (i) => i.income),
+      columnWidth: 200,
     },
     {
       key: "Country",
@@ -53,7 +174,7 @@ function App() {
       groupable: true,
     },
     dynamicColumns(
-      () => range(0, store.dummyColumnCount),
+      () => range(0, store.dataOption.columns),
       (i) => {
         return {
           key: "Dummy column " + i,
@@ -96,8 +217,6 @@ function App() {
     showAllRow: () => false,
   });
 
-  Object.assign(window, { context });
-
   return (
     <DataGridContextProvider value={context}>
       <div
@@ -108,44 +227,128 @@ function App() {
           overflow: "hidden",
         }}
       >
-        <div style={{ flex: "0 0 auto" }}>
-          <h1>Solid data grid</h1>
-          <button
-            onClick={async () => {
-              loadMockPersons(personCount).then(
-                (persons) => {
-                  updateStore({ ...store, persons });
-                }
-              );
-            }}
-          >
-            Refetch data
-          </button>
-          <button
-            onClick={() =>
-              updateStore(
-                "dummyColumnCount",
-                store.dummyColumnCount - 1
-              )
-            }
-          >
-            Less dummy columns
-          </button>
-          <button
-            onClick={() => {
-              updateStore(
-                "dummyColumnCount",
-                store.dummyColumnCount + 1
-              );
-              context.moveColumn(
-                "Dummy column " +
-                  (store.dummyColumnCount - 1),
-                "UNFROZEN"
-              );
-            }}
-          >
-            More dummy columns
-          </button>
+        <div
+          style={{
+            flex: "0 0 auto",
+            "margin-bottom": "1rem",
+          }}
+        >
+          <h1>
+            Solid data grid{" "}
+            <small>(no touch support for now)</small>
+          </h1>
+          <label>
+            Select data:{" "}
+            <select
+              value="100_10"
+              onChange={(e) =>
+                updateStore(
+                  "dataOption",
+                  dataOptions.find(
+                    (o) =>
+                      [o.rows, o.columns].join("_") ===
+                      e.currentTarget.value
+                  )!
+                )
+              }
+            >
+              <For each={dataOptions}>
+                {(data) => (
+                  <option
+                    value={[data.rows, data.columns].join(
+                      "_"
+                    )}
+                  >
+                    {Intl.NumberFormat(undefined, {
+                      useGrouping: true,
+                    }).format(data.rows)}{" "}
+                    rows - {data.columns} columns
+                  </option>
+                )}
+              </For>
+            </select>
+          </label>{" "}
+          <label>
+            Pinned cols:{" "}
+            <select
+              value={store.pinnedColumns}
+              onChange={(e) =>
+                updateStore(
+                  "pinnedColumns",
+                  Number(e.currentTarget.value)
+                )
+              }
+            >
+              <For each={pinningOptions}>
+                {(data) => (
+                  <option value={data}>{data}</option>
+                )}
+              </For>
+            </select>
+          </label>{" "}
+          <label>
+            Groups:{" "}
+            <select
+              value={store.groupBy.join("-")}
+              onChange={(e) =>
+                updateStore(
+                  "groupBy",
+                  e.currentTarget.value.split("-")
+                )
+              }
+            >
+              <For each={groupingOptions}>
+                {(data) => (
+                  <option value={data.join("-")}>
+                    {data.join(" > ") || "No groups"}
+                  </option>
+                )}
+              </For>
+            </select>
+          </label>{" "}
+          <label>
+            Sorting:{" "}
+            <select
+              value={JSON.stringify(store.sortBy)}
+              onChange={(e) =>
+                updateStore(
+                  "sortBy",
+                  JSON.parse(e.currentTarget.value)
+                )
+              }
+            >
+              <For each={sortBy}>
+                {(data) => (
+                  <option value={JSON.stringify(data)}>
+                    {data.key} {data.direction}
+                  </option>
+                )}
+              </For>
+            </select>
+          </label>{" "}
+          <label>
+            Country filter:{" "}
+            <select
+              value={store.countryFilter ?? ""}
+              onChange={(e) =>
+                updateStore(
+                  "countryFilter",
+                  e.currentTarget.value || null
+                )
+              }
+            >
+              <optgroup>
+                <option>All Countries</option>
+              </optgroup>
+              <optgroup>
+                <For each={countries()}>
+                  {(data) => (
+                    <option value={data}>{data}</option>
+                  )}
+                </For>
+              </optgroup>
+            </select>
+          </label>
         </div>
         <div
           style={{ flex: "1 1 auto", overflow: "hidden" }}

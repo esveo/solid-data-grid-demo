@@ -7,6 +7,10 @@ function generatePerson(id: number) {
   return {
     id,
     name: falso.randFullName(),
+    income: falso.randNumber({
+      min: 20000,
+      max: 2_000_000,
+    }),
     dateOfBirth: falso.randBetweenDate({
       from: new Date("1950-01-01"),
       to: new Date(),
